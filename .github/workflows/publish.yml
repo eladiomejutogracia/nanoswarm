@@ -1,4 +1,6 @@
 # Publishes the package to npm when a GitHub release is published.
+# Releases marked as "pre-release" (alphas, betas) are NOT published to npm,
+# so they can mark milestones on GitHub alone.
 #
 # One-time setup: create an npm "Automation" access token and add it to the
 # repository as the secret NPM_TOKEN (Settings → Secrets and variables → Actions).
@@ -11,6 +13,7 @@ on:
 
 jobs:
   publish:
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

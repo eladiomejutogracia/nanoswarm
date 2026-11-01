@@ -1,6 +1,6 @@
 {
   "name": "nanoswarm",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.1",
   "description": "Particle swarms shaped by formulas, 3D models and sound — as one HTML element.",
   "author": "Eladio Mejuto",
   "license": "MIT",
