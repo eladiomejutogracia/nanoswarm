@@ -1,4 +1,6 @@
 # Weekly pull requests to keep npm packages and GitHub Actions up to date.
+# Minor and patch updates arrive together in one PR; each major update gets its own PR,
+# because majors (three, vite, typescript…) can break the build and need a look.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -6,8 +8,8 @@ updates:
     schedule:
       interval: weekly
     groups:
-      dev-dependencies:
-        patterns: ['*']
+      minor-and-patch:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
