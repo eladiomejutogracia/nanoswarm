@@ -37,7 +37,6 @@ const GROUPS = { sound: 'Sound', shapes: 'Shapes', attractors: 'Attractors' } as
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const ui = {
-    topbar: document.querySelector<HTMLElement>('.topbar')!,
     themeToggle: $<HTMLButtonElement>('theme-toggle'),
     panel: $('panel'),
     panelToggle: $<HTMLButtonElement>('panel-toggle'),
@@ -370,23 +369,9 @@ function loadPaste(): void {
 
 // ─── Layout ──────────────────────────────────────────────────────
 
+// The element is sized to the space the panels leave free (style.css), so the camera frames
+// exactly what you can see — no offsets to compute here.
 const isOpen = (panel: HTMLElement) => !panel.classList.contains('hidden');
-
-/** Center the swarm in the space the top bar and the open panels leave free (layout offsets, not mid-animation rects). */
-function centerInFreeSpace(): void {
-    const swarm = el.swarm;
-    if (!swarm) return;
-    const top = ui.topbar.offsetHeight;
-    if (window.innerWidth <= 640) {
-        const sheet = [ui.panel, ui.codePanel].find(isOpen);
-        const bottom = sheet ? sheet.offsetTop : window.innerHeight;
-        swarm.setCenterOffset(0, (top + bottom - window.innerHeight) / 2);
-        return;
-    }
-    const left = isOpen(ui.panel) ? ui.panel.offsetLeft + ui.panel.offsetWidth : 0;
-    const right = isOpen(ui.codePanel) ? ui.codePanel.offsetLeft : window.innerWidth;
-    swarm.setCenterOffset((left + right - window.innerWidth) / 2, top / 2);
-}
 
 // ─── Theme: follows the system until you pick one ────────────────
 // The theme styles the playground only; a creation keeps its own `background`.
@@ -412,20 +397,15 @@ function toggleTheme(): void {
     renderThemeToggle();
 }
 
-function togglePanel(panel: HTMLElement, button: HTMLButtonElement, open: boolean, labels: [string, string]): void {
+/** Top-bar toggles keep one label; aria-expanded (shown as brightness) says whether the panel is open. */
+function togglePanel(panel: HTMLElement, button: HTMLButtonElement, open: boolean): void {
     panel.classList.toggle('hidden', !open);
-    button.textContent = open ? labels[1] : labels[0];
     button.setAttribute('aria-expanded', String(open));
     if (open && window.innerWidth <= 640) { // phones: one sheet at a time
         const other = panel === ui.panel ? ui.codePanel : ui.panel;
         if (isOpen(other)) (other === ui.panel ? ui.panelToggle : ui.codeToggle).click();
     }
-    centerInFreeSpace();
 }
-
-// Top-bar toggles keep one label; aria-expanded (shown as brightness) says whether the panel is open.
-const PANEL_LABELS: [string, string] = ['Controls', 'Controls'];
-const CODE_LABELS: [string, string] = ['</> Code', '</> Code'];
 
 // ─── Static parts of the panel ───────────────────────────────────
 
@@ -528,9 +508,8 @@ function wire(): void {
 
     ui.themeToggle.addEventListener('click', toggleTheme);
     systemLight.addEventListener('change', renderThemeToggle);
-    ui.panelToggle.addEventListener('click', () => togglePanel(ui.panel, ui.panelToggle, !isOpen(ui.panel), PANEL_LABELS));
-    ui.codeToggle.addEventListener('click', () => togglePanel(ui.codePanel, ui.codeToggle, !isOpen(ui.codePanel), CODE_LABELS));
-    window.addEventListener('resize', centerInFreeSpace);
+    ui.panelToggle.addEventListener('click', () => togglePanel(ui.panel, ui.panelToggle, !isOpen(ui.panel)));
+    ui.codeToggle.addEventListener('click', () => togglePanel(ui.codePanel, ui.codeToggle, !isOpen(ui.codePanel)));
 
     // Space toggles play/pause when not typing.
     window.addEventListener('keydown', (event) => {
@@ -584,7 +563,7 @@ renderThemeToggle();
 wire();
 const FIRST_EXAMPLE = 'Lorenz'; // shows the newest idea first: a formula that moves
 applyMarkup(decodeShare(location.hash) ?? (examples.find((e) => titleOf(e.markup) === FIRST_EXAMPLE) ?? examples[0]).markup);
-togglePanel(ui.codePanel, ui.codeToggle, window.innerWidth >= WIDE_SCREEN, CODE_LABELS);
+togglePanel(ui.codePanel, ui.codeToggle, window.innerWidth >= WIDE_SCREEN);
 render();
 setInterval(() => {
     renderAudio();

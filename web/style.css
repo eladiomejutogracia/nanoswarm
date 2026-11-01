@@ -79,8 +79,11 @@ html, body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* The page's own styling of the element — kept out of the element so the code panel shows only what matters. */
-#swarm { position: fixed; inset: 0; }
+/* The page's own styling of the element — kept out of the element so the code panel shows only what matters.
+   It fills exactly the space the top bar and the open panels leave free, so the camera frames what you see. */
+#swarm { position: fixed; inset: var(--topbar) 0 0; }
+body:has(#panel:not(.hidden)) #swarm { left: var(--panel-width); }
+body:has(#code-panel:not(.hidden)) #swarm { right: var(--code-width); }
 
 :focus-visible { outline: 2px solid var(--interactive); outline-offset: 2px; }
 
@@ -494,7 +497,7 @@ input[type='color']::-moz-color-swatch { border: none; border-radius: 2px; }
 
 /* Phones: a compact bar, and the panels become bottom sheets. */
 @media (max-width: 640px) {
-    :root { --topbar: 52px; }
+    :root { --topbar: 52px; --sheet: 55vh; }
     .topbar { padding: 0 12px 0 16px; }
     .brand h1 { font-size: 24px; }
     .toolbar { gap: 0; }
@@ -506,14 +509,15 @@ input[type='color']::-moz-color-swatch { border: none; border-radius: 2px; }
         left: 0;
         right: 0;
         width: auto;
-        max-height: 55vh;
+        height: var(--sheet);
         border: none;
         border-top: 1px solid var(--border-visible);
         border-radius: 16px 16px 0 0;
     }
     .panel { padding: 0 16px; }
     .panel-foot { margin: 0 -16px; padding: 12px 16px; }
-    .code-panel { height: 55vh; padding: 16px; }
+    .code-panel { padding: 16px; }
+    body:has(#panel:not(.hidden)) #swarm, body:has(#code-panel:not(.hidden)) #swarm { left: 0; right: 0; bottom: var(--sheet); }
 }
 
 /* Touch screens: 44px targets. */
