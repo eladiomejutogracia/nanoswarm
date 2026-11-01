@@ -5,7 +5,7 @@ Thanks for helping! There are three ways in, from easiest to deepest.
 ## 1. Share a creation
 
 Made something nice in the [playground](https://eladiomejutogracia.github.io/nanoswarm/)? Click
-**Copy link** and post it in [Discussions → Show and tell](https://github.com/eladiomejutogracia/nanoswarm/discussions).
+**Copy link** and post it in [Discussions → Show and tell](https://github.com/eladiomejutogracia/nanoswarm/discussions/categories/show-and-tell).
 
 ## 2. Add an example
 

@@ -1,6 +1,17 @@
 import * as THREE from 'three';
-import type { Look } from '../looks';
+import { backgroundCover, type Look } from '../looks';
 import type { BackendKind } from './types';
+
+/**
+ * Light style: result = particle + background × (1 − a × cover). With cover 0 (a black
+ * background) this is plain additive glow; with cover 1 (white) the particle covers it like ink.
+ */
+const GLOW_BLENDING = {
+    blending: THREE.CustomBlending,
+    blendEquation: THREE.AddEquation,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneMinusSrcAlphaFactor,
+} as const;
 
 const VERTEX = /* glsl */ `
 uniform vec3 uColors[3];
@@ -45,6 +56,7 @@ void main() {
 
 const FRAGMENT = /* glsl */ `
 uniform float uIntensity;
+uniform float uCover;
 varying vec3 vColor;
 
 void main() {
@@ -59,7 +71,8 @@ void main() {
 #else
     float a = 1.0 - sqrt(d2);
     a *= a;
-    gl_FragColor = vec4(vColor * a * uIntensity, a);
+    // Premultiplied: adds the light, and hides the background by a * uCover (see GLOW_BLENDING).
+    gl_FragColor = vec4(vColor * a * uIntensity, a * uCover);
 #endif
 }
 `;
@@ -87,10 +100,11 @@ export function createPointsMaterial(kind: BackendKind): THREE.ShaderMaterial {
             uVelocities: { value: null },
             uTargets: { value: null },
             uIntensity: { value: 1 },
+            uCover: { value: 0 },
         },
         transparent: true,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        ...GLOW_BLENDING,
     });
 }
 
@@ -99,7 +113,10 @@ export function applyLook(material: THREE.ShaderMaterial, look: Look, count: num
     look.colors.forEach((hex, i) => colors[i].set(hex));
     material.uniforms.uSize.value = pointSize(look, count) * (look.style === 'solid' ? 0.8 : 1);
     material.uniforms.uPixelRatio.value = pixelRatio;
-    material.uniforms.uIntensity.value = lightIntensity(count);
+    // Dimming only keeps added light from burning to white; covering particles don't add up.
+    const cover = backgroundCover(look.background);
+    material.uniforms.uCover.value = cover;
+    material.uniforms.uIntensity.value = lightIntensity(count) * (1 - cover) + cover;
 
     const solid = look.style === 'solid';
     if (solid !== ('NS_SOLID' in material.defines)) {
@@ -107,7 +124,8 @@ export function applyLook(material: THREE.ShaderMaterial, look: Look, count: num
         else delete material.defines.NS_SOLID;
         material.transparent = !solid;
         material.depthWrite = solid;
-        material.blending = solid ? THREE.NormalBlending : THREE.AdditiveBlending;
+        if (solid) material.blending = THREE.NormalBlending;
+        else Object.assign(material, GLOW_BLENDING);
         material.needsUpdate = true;
     }
 }

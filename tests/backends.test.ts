@@ -6,7 +6,7 @@ import { buildPhysicsShader, buildTargetShader, packRGBA } from '../src/backends
 import { chooseBackend, clampParticles, PARTICLE_LIMITS, type GpuCapabilities } from '../src/backends/select';
 import { applyLook, createPointsMaterial, lightIntensity, pointSize } from '../src/backends/material';
 import { SILENCE } from '../src/audio/bands';
-import { LOOK_DEFAULTS, resolveLook } from '../src/looks';
+import { backgroundCover, LOOK_DEFAULTS, resolveLook } from '../src/looks';
 import { calibrateFlow } from '../src/sources/flow';
 import type { FrameInput } from '../src/backends/types';
 
@@ -188,7 +188,7 @@ describe('looks', () => {
         expect(LOOK_DEFAULTS).toMatchObject({ style: 'light', bloom: 0 });
     });
 
-    it('switches the material between light (additive) and solid (opaque, depth-tested)', () => {
+    it('switches the material between light (glow) and solid (opaque, depth-tested)', () => {
         const material = createPointsMaterial('cpu');
         applyLook(material, { ...look, style: 'solid' }, 50_000, 1);
         expect(material.defines).toHaveProperty('NS_SOLID');
@@ -198,8 +198,20 @@ describe('looks', () => {
 
         applyLook(material, look, 50_000, 1);
         expect(material.defines).not.toHaveProperty('NS_SOLID');
-        expect(material.blending).toBe(THREE.AdditiveBlending);
+        expect(material.blending).toBe(THREE.CustomBlending);
+        expect([material.blendSrc, material.blendDst]).toEqual([THREE.OneFactor, THREE.OneMinusSrcAlphaFactor]);
         expect(material.depthWrite).toBe(false);
+    });
+
+    it('light particles add up on dark backgrounds and cover bright ones', () => {
+        expect(backgroundCover('#000000')).toBe(0);
+        expect(backgroundCover('#fff')).toBeCloseTo(1, 6);
+        expect(backgroundCover('#03040a')).toBeLessThan(0.03); // the default stays glow
+        expect(backgroundCover('#808080')).toBeCloseTo(0.5, 1);
+        expect(backgroundCover('#ffff00')).toBeGreaterThan(backgroundCover('#0000ff')); // by brightness, not just value
+        const material = createPointsMaterial('gpu');
+        applyLook(material, { ...look, background: '#ffffff' }, 50_000, 1);
+        expect(material.uniforms.uCover.value).toBeCloseTo(1, 6);
     });
 
     it('dims light-style points as the count grows so dense areas do not burn white', () => {
