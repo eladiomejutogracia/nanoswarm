@@ -5,11 +5,18 @@
 # One-time setup: create an npm "Automation" access token and add it to the
 # repository as the secret NPM_TOKEN (Settings → Secrets and variables → Actions).
 # Then: bump "version" in package.json, push, and publish a release tagged vX.Y.Z.
+#
+# --provenance links each npm version to this workflow run and commit, so anyone can
+# verify on npmjs.com that the package was built here and not on someone's laptop.
 name: Publish to npm
 
 on:
   release:
     types: [published]
+
+permissions:
+  contents: read
+  id-token: write # signs the provenance statement
 
 jobs:
   publish:
@@ -28,6 +35,6 @@ jobs:
       - run: npm run build
       - name: Release tag must match package.json
         run: test "v$(node -p "require('./package.json').version")" = "${{ github.event.release.tag_name }}"
-      - run: npm publish --access public
+      - run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

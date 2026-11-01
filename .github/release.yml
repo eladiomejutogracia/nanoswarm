@@ -1,0 +1,11 @@
+# Sections for the release notes GitHub generates ("Generate release notes"), by pull request label.
+changelog:
+  categories:
+    - title: New
+      labels: [enhancement]
+    - title: Fixes
+      labels: [bug]
+    - title: Dependencies
+      labels: [dependencies]
+    - title: Other changes
+      labels: ['*']

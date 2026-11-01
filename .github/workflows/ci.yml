@@ -6,6 +6,14 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the run that is now outdated.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -24,3 +32,12 @@ jobs:
         run: git diff --exit-code -- .claude/skills web/public/llms.txt
       - name: Every example passes the checker
         run: npm run check -- examples
+
+  # Pull requests only: stops new dependencies that have known vulnerabilities.
+  dependencies:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: moderate

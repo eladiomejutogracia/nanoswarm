@@ -1,6 +1,12 @@
 # NanoSwarm
 
+[![CI](https://github.com/eladiomejutogracia/nanoswarm/actions/workflows/ci.yml/badge.svg)](https://github.com/eladiomejutogracia/nanoswarm/actions/workflows/ci.yml)
+[![Playground](https://github.com/eladiomejutogracia/nanoswarm/actions/workflows/pages.yml/badge.svg)](https://eladiomejutogracia.github.io/nanoswarm/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Particle swarms shaped by **formulas**, **3D models** and **sound** — as one HTML element.
+
+[![A spiral galaxy made of particles, drawn by a formula inside a nano-swarm element](.github/preview.jpg)](https://eladiomejutogracia.github.io/nanoswarm/)
 
 ```html
 <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
@@ -152,10 +158,14 @@ npm run build       # dist/nanoswarm.js (ES module, three.js peer) + dist/nano-s
 npm run build:web   # playground → dist-web/
 ```
 
-GitHub Actions: **CI** runs types, tests and both builds on every push; **Playground** deploys
-`web/` to GitHub Pages (public repository, Pages source set to "GitHub Actions"); **Publish to npm**
-runs when a release is published — bump `version` in `package.json`, push, then publish a release
-tagged `vX.Y.Z` (needs an `NPM_TOKEN` repository secret).
+`main` is protected: changes arrive through pull requests, and **CI** must pass before they merge.
+
+GitHub Actions: **CI** runs types, tests and both builds on every push, and on pull requests also
+checks new dependencies for known vulnerabilities; **Playground** deploys `web/` to GitHub Pages;
+**Publish to npm** runs when a release is published — bump `version` in `package.json`, merge, then
+publish a release tagged `vX.Y.Z` (needs an `NPM_TOKEN` repository secret). Pre-releases stay on GitHub.
+CodeQL scans the code for security issues, and Dependabot proposes dependency updates every week.
+Found a security problem? See [SECURITY.md](SECURITY.md).
 
 ```
 src/
@@ -174,5 +184,5 @@ web/         the playground
 
 ## Contributing
 
-Creations, examples and code are all welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
-Working with an AI agent? It will find [AGENTS.md](AGENTS.md).
+Creations, examples and code are all welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[code of conduct](CODE_OF_CONDUCT.md). Working with an AI agent? It will find [AGENTS.md](AGENTS.md).
