@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MeshSurfaceSampler } from 'three/examples/jsm/math/MeshSurfaceSampler.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { AnimatedModel } from './animation';
 import { normalizePoints } from './params';
 
 export type ModelFormat = 'glb' | 'gltf' | 'obj' | 'stl' | 'ply';
@@ -76,8 +77,11 @@ async function readBuffer(input: ModelInput): Promise<{ buffer: ArrayBuffer; nam
     return { buffer: await input.arrayBuffer(), name: 'name' in input ? (input as File).name : '' };
 }
 
-/** Load a 3D model file and return it as a single geometry ready for sampling. */
-export async function loadModelGeometry(input: ModelInput, format?: ModelFormat): Promise<THREE.BufferGeometry> {
+/**
+ * Load a 3D model file: a single geometry ready for sampling, or — for a GLB/GLTF
+ * that has animations — an AnimatedModel that plays the one named (default: the first).
+ */
+export async function loadModel(input: ModelInput, format?: ModelFormat, animation?: string): Promise<THREE.BufferGeometry | AnimatedModel> {
     const { buffer, name } = await readBuffer(input);
     const kind = format ?? detectModelFormat(name);
     if (!kind) throw new Error('[NanoSwarm] Unknown model format. Pass { format } or use a .glb/.gltf/.obj/.stl/.ply file.');
@@ -87,7 +91,8 @@ export async function loadModelGeometry(input: ModelInput, format?: ModelFormat)
     case 'gltf': {
         const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
         const gltf = await new GLTFLoader().parseAsync(buffer, '');
-        return flattenToGeometry(gltf.scene);
+        const clips = gltf.animations.filter((clip) => clip.duration > 0);
+        return clips.length > 0 ? new AnimatedModel(gltf.scene, clips, animation) : flattenToGeometry(gltf.scene);
     }
     case 'obj': {
         const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader.js');

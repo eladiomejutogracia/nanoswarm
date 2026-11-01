@@ -1,6 +1,7 @@
 import { compileFormula, type CompiledFormula } from '../formula';
 import { calibrateFlow, type FlowField } from './flow';
-import { detectModelFormat, loadModelGeometry, sampleSurface, type ModelFormat, type ModelInput } from './model';
+import { AnimatedModel } from './animation';
+import { detectModelFormat, loadModel, sampleSurface, type ModelFormat, type ModelInput } from './model';
 import { normalizePoints, resamplePoints } from './params';
 
 /**
@@ -10,6 +11,7 @@ import { normalizePoints, resamplePoints } from './params';
  *   'x = cos(u)\ny = sin(u)\nz = 0'   a formula (shape: x, y, z — or motion: dx, dy, dz)
  *   { formula: '...' }                the same, explicitly
  *   { model: 'bunny.glb' }            a 3D model (URL, File, Blob or ArrayBuffer)
+ *   { model: 'fox.glb', animation: 'Walk' }   …playing one of its animations (default: the first)
  *   { points: Float32Array }          your own xyz triplets
  *
  * An empty formula shows DEFAULT_FORMULA.
@@ -17,7 +19,7 @@ import { normalizePoints, resamplePoints } from './params';
 export type Source =
     | string
     | { formula: string }
-    | { model: ModelInput; format?: ModelFormat }
+    | { model: ModelInput; format?: ModelFormat; animation?: string }
     | { points: Float32Array };
 
 /** What an empty <nano-swarm> (or an empty formula) shows: an evenly spread sphere. */
@@ -32,7 +34,8 @@ export const DEFAULT_FORMULA = [
 export type Target =
     | { kind: 'shape'; formula: CompiledFormula }
     | { kind: 'motion'; field: FlowField }
-    | { kind: 'points'; sample(count: number): Float32Array };
+    | { kind: 'points'; sample(count: number): Float32Array }
+    | { kind: 'animated'; model: AnimatedModel };
 
 function pointsTarget(sample: (count: number) => Float32Array): Target {
     let cached: { count: number; points: Float32Array } | null = null;
@@ -57,8 +60,9 @@ export async function resolveSource(source: Source): Promise<Target> {
     if ('formula' in source) return formulaTarget(source.formula);
 
     if ('model' in source) {
-        const geometry = await loadModelGeometry(source.model, source.format);
-        return pointsTarget((count) => sampleSurface(geometry, count));
+        const model = await loadModel(source.model, source.format, source.animation);
+        if (model instanceof AnimatedModel) return { kind: 'animated', model };
+        return pointsTarget((count) => sampleSurface(model, count));
     }
 
     if ('points' in source) {

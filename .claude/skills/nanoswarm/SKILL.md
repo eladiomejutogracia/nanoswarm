@@ -41,7 +41,8 @@ The script includes three.js and picks GPU or CPU rendering by itself.
 | | |
 |---|---|
 | `title` | A name for this creation |
-| `model` | A 3D model file to use instead of a formula (.glb .gltf .obj .stl .ply) |
+| `model` | A 3D model file to use instead of a formula (.glb .gltf .obj .stl .ply). Animated .glb/.gltf files move |
+| `animation` | Which animation of an animated model to play, by name (default: the first) |
 | `colors` | Up to three colors, bottom → top (or c = 0 → 1) |
 | `background` | Background color |
 | `solid` | Opaque, shaded particles instead of glowing ones |

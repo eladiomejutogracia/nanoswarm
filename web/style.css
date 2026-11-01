@@ -303,6 +303,20 @@ textarea.invalid { border-color: var(--accent); }
 .drop:hover, body.dragging .drop { color: var(--text-display); border-color: var(--text-primary); }
 .drop small { font-size: 10px; color: var(--text-disabled); }
 
+.model-extra { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.model-extra label { display: flex; align-items: center; gap: 8px; font: 400 11px/1.2 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+select {
+    font: 400 12px/1.2 var(--font-mono);
+    color: var(--text-display);
+    background: var(--surface);
+    border: 1px solid var(--border-visible);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+    cursor: pointer;
+}
+.model-extra label[hidden] { display: none; }
+select:focus-visible { outline: 2px solid var(--interactive); outline-offset: 2px; }
+
 /* ─── Sliders ───────────────────────────────────────────── */
 
 .slider { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-top: 16px; cursor: pointer; }

@@ -81,6 +81,7 @@ export function checkMarkup(markup: SwarmMarkup): CheckResult {
             }
         }
     }
+    if (attr.has('animation') && model === undefined) warnings.push('animation is ignored without a model');
     if (attr.has('audio') && !listens && errors.length === 0) {
         warnings.push('audio is set, but the formula never reads bass, mid, treble, level or spectrum(k)');
     }

@@ -48,8 +48,11 @@ export function createSpawnCloud(count: number, radius = 9, seed = 3): Float32Ar
     return out;
 }
 
+/** Radius models and point clouds are scaled to, in world units. */
+export const FIT_RADIUS = 4.5;
+
 /** Center points on the origin and scale them to fit inside `radius`. In place. */
-export function normalizePoints(points: Float32Array, radius = 4.5): Float32Array {
+export function normalizePoints(points: Float32Array, radius = FIT_RADIUS): Float32Array {
     const n = points.length / 3;
     if (n === 0) return points;
 

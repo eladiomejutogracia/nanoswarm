@@ -28,6 +28,7 @@ const el = document.getElementById('swarm') as NanoSwarmElement;
 // Served with the playground by GitHub Pages (always the latest main). Switch to the npm CDN once published.
 const SCRIPT_TAG = `<script src="${SCRIPT_URL}"></script>`;
 const DEMO_TRACK = 'audio/lofi-sample.mp3';
+const DEMO_MODEL = { model: 'models/fox.glb', animation: 'Walk' };
 const PARTICLE_STEPS = [5_000, 10_000, 20_000, 30_000, 60_000, 120_000, 180_000, 260_000];
 const FORMULA_DEBOUNCE_MS = 250;
 const WIDE_SCREEN = 1200;
@@ -59,6 +60,9 @@ const ui = {
     helpMotion: $('help-motion'),
     helpFunctions: $('help-functions'),
     modelInput: $<HTMLInputElement>('model-input'),
+    tryFox: $<HTMLButtonElement>('try-fox'),
+    animationRow: $('animation-row'),
+    animation: $<HTMLSelectElement>('animation'),
     palettes: $('palettes'),
     colors: [$<HTMLInputElement>('color-0'), $<HTMLInputElement>('color-1'), $<HTMLInputElement>('color-2')],
     background: $<HTMLInputElement>('background'),
@@ -179,6 +183,17 @@ function render(): void {
     for (const button of ui.rendererButtons) button.classList.toggle('active', button.dataset.renderer === options.backend);
     renderAudio();
     renderPerformance();
+    renderAnimation();
+}
+
+/** The animation picker: only for a model with more than one animation. */
+function renderAnimation(): void {
+    const names = attr('model') ? el.swarm?.animations ?? [] : [];
+    ui.animationRow.hidden = names.length < 2;
+    if (ui.animation.options.length !== names.length || names.some((name, i) => ui.animation.options[i].value !== name)) {
+        ui.animation.replaceChildren(...names.map((name) => new Option(name, name)));
+    }
+    ui.animation.value = attr('animation') ?? names[0] ?? '';
 }
 
 function renderAudio(): void {
@@ -258,17 +273,21 @@ function onFormulaInput(): void {
         if (el.hasAttribute('model')) {
             el.modelFile = null;
             el.removeAttribute('model');
+            el.removeAttribute('animation');
         }
         el.formula = text;
     }, FORMULA_DEBOUNCE_MS);
 }
 
-function loadModel(file: File): void {
-    el.modelFile = file;
+/** Show a model: a picked file, or a URL (with one of its animations, if given). */
+function loadModel(source: File | string, animation: string | null = null): void {
+    const name = typeof source === 'string' ? source : source.name;
+    el.modelFile = typeof source === 'string' ? null : source;
     el.formula = '';
-    setAttr('title', file.name.replace(/\.[^.]+$/, '')); // the previous creation's name no longer fits
-    setAttr('model', file.name);
-    setStatus(`✓ Model: ${file.name}`, 'ok');
+    setAttr('title', name.replace(/^.*\//, '').replace(/\.[^.]+$/, '')); // the previous creation's name no longer fits
+    setAttr('model', name);
+    setAttr('animation', animation);
+    setStatus(`✓ Model: ${name}`, 'ok');
     if (!el.hasAttribute('solid')) toast('Tip: tick Solid to give models more volume');
 }
 
@@ -459,6 +478,9 @@ function wire(): void {
         if (file) loadModel(file);
         ui.modelInput.value = '';
     });
+    ui.tryFox.addEventListener('click', () => loadModel(DEMO_MODEL.model, DEMO_MODEL.animation));
+    ui.animation.addEventListener('change', () => setAttr('animation', ui.animation.value));
+    el.addEventListener('swarm-load', renderAnimation);
 
     const writeColors = () => setAttr('colors', ui.colors.map((input) => input.value).join(' '));
     for (const input of ui.colors) input.addEventListener('input', writeColors);
