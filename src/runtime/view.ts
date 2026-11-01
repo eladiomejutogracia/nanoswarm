@@ -9,6 +9,20 @@ export interface View {
 
 export const DEFAULT_VIEW: View = { elevation: 11, distance: 13 };
 
+/** The camera's field of view, in degrees, along the canvas's shorter side. */
+export const FIELD_OF_VIEW = 50;
+
+/**
+ * Vertical field of view for a canvas of this aspect (width / height).
+ * Landscape keeps FIELD_OF_VIEW vertically; portrait keeps it horizontally,
+ * so a shape that fits a wide canvas also fits a tall, narrow one.
+ */
+export function verticalFov(aspect: number): number {
+    if (aspect >= 1) return FIELD_OF_VIEW;
+    const half = THREE.MathUtils.degToRad(FIELD_OF_VIEW / 2);
+    return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(half) / aspect));
+}
+
 const easeInOut = (k: number) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
 
 /**

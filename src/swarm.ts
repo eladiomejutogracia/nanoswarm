@@ -13,7 +13,7 @@ import type { Backend, BackendKind, FrameInput } from './backends/types';
 import { resolveLook, type Look } from './looks';
 import { PointerTracker } from './runtime/pointer';
 import { AutoQuality } from './runtime/quality';
-import { DEFAULT_VIEW, ViewTween } from './runtime/view';
+import { DEFAULT_VIEW, FIELD_OF_VIEW, ViewTween, verticalFov } from './runtime/view';
 import { DEFAULT_FORMULA, resolveSource, type Source, type Target } from './sources';
 
 export interface SwarmOptions {
@@ -64,7 +64,7 @@ export class Swarm {
 
     private readonly renderer: THREE.WebGLRenderer;
     private readonly scene = new THREE.Scene();
-    private readonly camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
+    private readonly camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.1, 200);
     private readonly controls: OrbitControls;
     private readonly audio = new AudioInput();
     private readonly pointer: PointerTracker;
@@ -357,6 +357,7 @@ export class Swarm {
         this.composer?.setPixelRatio(this.renderer.getPixelRatio());
         this.composer?.setSize(width, height);
         this.camera.aspect = width / height;
+        this.camera.fov = verticalFov(this.camera.aspect);
         const { x, y } = this.centerOffset;
         if (x || y) this.camera.setViewOffset(width, height, -x, -y, width, height);
         else this.camera.clearViewOffset();
