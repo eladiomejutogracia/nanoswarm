@@ -37,6 +37,8 @@ jobs:
       - run: npm run build
       - run: npm run build:web
       - run: cp dist/nano-swarm.js dist-web/nano-swarm.js
+      - name: Downloadable AI skill (Claude Code + GitHub Copilot)
+        run: cd .claude/skills && zip -r ../../dist-web/nanoswarm-skill.zip nanoswarm
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

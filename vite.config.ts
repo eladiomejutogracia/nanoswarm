@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 // `vite` / `vite build`         → the playground web page (web/)
 // `vite build --mode lib`       → dist/nanoswarm.js — ES module, three.js as a peer dependency
 // `vite build --mode element`   → dist/nano-swarm.js — one drop-in <script>, three.js included
+// `vite build --mode check`     → .claude/skills/nanoswarm/check.mjs — the validator, Node only
 export default defineConfig(({ mode }) => {
     if (mode === 'lib') {
         return {
@@ -18,6 +19,26 @@ export default defineConfig(({ mode }) => {
                 },
                 rollupOptions: {
                     external: [/^three(\/.*)?$/],
+                },
+            },
+        };
+    }
+
+    if (mode === 'check') {
+        return {
+            build: {
+                outDir: '.claude/skills/nanoswarm',
+                emptyOutDir: false, // the folder also holds SKILL.md
+                minify: false, // keep it readable: people (and agents) may open it
+                target: 'node18',
+                lib: {
+                    entry: resolve(__dirname, 'src/element/cli.ts'),
+                    formats: ['es'],
+                    fileName: () => 'check.mjs',
+                },
+                rollupOptions: {
+                    external: [/^node:/],
+                    output: { banner: '#!/usr/bin/env node\n// Generated from src/element/cli.ts by `npm run build:check`. Do not edit.' },
                 },
             },
         };

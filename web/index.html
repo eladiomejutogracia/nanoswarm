@@ -20,7 +20,10 @@
     <aside id="code-panel" class="code-panel hidden" aria-label="Code">
         <header class="code-head">
             <h2>Code</h2>
-            <button id="copy-code" class="primary">Copy</button>
+            <div class="buttons">
+                <button id="paste-code" title="Load a <nano-swarm> from an AI assistant, a saved page or a friend">Paste HTML</button>
+                <button id="copy-code" class="primary">Copy</button>
+            </div>
         </header>
         <p class="muted">This is the element on this page, as it is right now. Paste it into any HTML page.</p>
         <pre><code id="code"></code></pre>
@@ -134,6 +137,19 @@
             <button id="share">Copy link</button>
         </footer>
     </aside>
+
+    <dialog id="paste-dialog" class="paste-dialog" aria-labelledby="paste-title">
+        <form method="dialog">
+            <h2 id="paste-title">Paste HTML</h2>
+            <p class="muted">Paste a <code>&lt;nano-swarm&gt;</code> element — from an AI assistant, a saved page or a friend. It is checked before it loads.</p>
+            <textarea id="paste-text" rows="12" spellcheck="false" aria-label="HTML to load" placeholder="<nano-swarm title=&quot;…&quot;>&#10;  x = …&#10;</nano-swarm>"></textarea>
+            <ul id="paste-report" class="report" role="status"></ul>
+            <div class="buttons end">
+                <button value="cancel">Cancel</button>
+                <button id="paste-load" class="primary" value="load" disabled>Load</button>
+            </div>
+        </form>
+    </dialog>
 
     <div id="toast" class="toast" role="alert" hidden></div>
 

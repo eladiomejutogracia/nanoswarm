@@ -20,3 +20,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:web
+      - name: The AI skill's files are up to date (run `npm run build:check` and `npx vitest -u`)
+        run: git diff --exit-code -- .claude/skills web/public/llms.txt
+      - name: Every example passes the checker
+        run: npm run check -- examples

@@ -1,0 +1,26 @@
+name: Bug report
+description: Something doesn't render, crashes, or behaves differently than documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: element
+    attributes:
+      label: The element
+      description: Paste the `<nano-swarm>` (the playground's Code panel or "Copy link" gives you one).
+      render: html
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens, and what you expected
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Browser, device, and renderer
+      description: The playground's Performance section shows GPU or CPU.
+      placeholder: Safari 18 on iPhone 15, GPU
+    validations:
+      required: true

@@ -234,6 +234,23 @@ button.play:hover { background: rgba(124, 77, 255, 0.5) !important; }
 .code-panel.hidden { transform: translateX(calc(100% + 32px)); opacity: 0; pointer-events: none; }
 .code-head { display: flex; align-items: center; justify-content: space-between; }
 .code-head h2 { margin: 0; }
+
+.paste-dialog {
+    width: min(560px, calc(100% - 32px));
+    padding: 20px;
+    color: var(--text);
+    background: #0d0f1a;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+}
+.paste-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+.paste-dialog h2 { margin: 0 0 6px; }
+.paste-dialog p { margin: 0 0 10px; font-size: 12px; }
+.report { min-height: 1.4em; margin: 10px 0; padding: 0; list-style: none; font-size: 12px; }
+.report .error { color: var(--error); }
+.report .warning { color: #ffd166; }
+.report .ok { color: var(--ok); }
+.buttons.end { justify-content: flex-end; }
 .code-panel > p { margin: 8px 0 10px; font-size: 12px; }
 .code-panel pre {
     flex: 1;

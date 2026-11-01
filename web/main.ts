@@ -13,6 +13,8 @@ import {
     type NanoSwarmElement,
     type SwarmMarkup,
 } from '../src';
+import { SCRIPT_URL } from '../src/ai/reference';
+import { checkHtml } from '../src/element/check';
 import { PALETTES } from './palettes';
 import { decodeShare, encodeShare } from './share';
 
@@ -24,7 +26,7 @@ defineNanoSwarm();
 const el = document.getElementById('swarm') as NanoSwarmElement;
 
 // Served with the playground by GitHub Pages (always the latest main). Switch to the npm CDN once published.
-const SCRIPT_TAG = '<script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>';
+const SCRIPT_TAG = `<script src="${SCRIPT_URL}"></script>`;
 const DEMO_TRACK = 'audio/lofi-sample.mp3';
 const PARTICLE_STEPS = [5_000, 10_000, 20_000, 30_000, 60_000, 120_000, 180_000, 260_000];
 const FORMULA_DEBOUNCE_MS = 250;
@@ -41,6 +43,11 @@ const ui = {
     codeToggle: $<HTMLButtonElement>('code-toggle'),
     code: $('code'),
     copyCode: $<HTMLButtonElement>('copy-code'),
+    pasteCode: $<HTMLButtonElement>('paste-code'),
+    pasteDialog: $<HTMLDialogElement>('paste-dialog'),
+    pasteText: $<HTMLTextAreaElement>('paste-text'),
+    pasteReport: $('paste-report'),
+    pasteLoad: $<HTMLButtonElement>('paste-load'),
     examples: $('examples'),
     title: $<HTMLInputElement>('title'),
     formula: $<HTMLTextAreaElement>('formula'),
@@ -329,6 +336,36 @@ async function copyLink(): Promise<void> {
     }
 }
 
+// ─── Paste HTML ──────────────────────────────────────────────────
+
+/** Check the pasted HTML as you type; only a valid element can be loaded. */
+function reviewPaste(): void {
+    const text = ui.pasteText.value;
+    ui.pasteReport.replaceChildren();
+    if (!text.trim()) {
+        ui.pasteLoad.disabled = true;
+        return;
+    }
+    const result = checkHtml(text);
+    const line = (kind: string, message: string) => {
+        const item = document.createElement('li');
+        item.className = kind;
+        item.textContent = message;
+        ui.pasteReport.append(item);
+    };
+    if (result.ok) line('ok', `✓ ${result.title ?? 'Untitled'} — ${result.summary.join(', ')}`);
+    for (const error of result.errors) line('error', `✗ ${error}`);
+    for (const warning of result.warnings) line('warning', `! ${warning}`);
+    ui.pasteLoad.disabled = !result.ok;
+}
+
+function loadPaste(): void {
+    applyMarkup(parseMarkup(ui.pasteText.value));
+    ui.pasteText.value = '';
+    reviewPaste();
+    toast('Loaded');
+}
+
 // ─── Layout ──────────────────────────────────────────────────────
 
 const isOpen = (panel: HTMLElement) => !panel.classList.contains('hidden');
@@ -442,6 +479,14 @@ function wire(): void {
 
     ui.save.addEventListener('click', savePage);
     ui.share.addEventListener('click', () => void copyLink());
+    ui.pasteCode.addEventListener('click', () => {
+        ui.pasteDialog.showModal();
+        ui.pasteText.focus();
+    });
+    ui.pasteText.addEventListener('input', reviewPaste);
+    ui.pasteDialog.addEventListener('close', () => {
+        if (ui.pasteDialog.returnValue === 'load' && !ui.pasteLoad.disabled) loadPaste();
+    });
     ui.copyCode.addEventListener('click', async () => {
         try {
             await navigator.clipboard.writeText(ui.code.textContent ?? '');

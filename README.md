@@ -100,6 +100,23 @@ the swarm follows — particles fly to new shapes.
 check that every example compiles, stays on screen and uses its colors well. Add a file, and it
 shows up.
 
+## With AI assistants
+
+NanoSwarm ships an **Agent Skill** that works in both **Claude Code** and **GitHub Copilot** (agent mode,
+CLI and cloud agent): it teaches the assistant the element and the formula language, and includes a
+validator so the assistant checks its own work before showing it to you.
+
+- **Install:** download [nanoswarm-skill.zip](https://eladiomejutogracia.github.io/nanoswarm/nanoswarm-skill.zip)
+  and unzip it into `~/.claude/skills/` (both tools read that folder), or into your project's
+  `.claude/skills/` or `.github/skills/`.
+- **Then ask:** *"make me a nano-swarm that looks like a jellyfish pulsing with the bass"*.
+- **Any other assistant:** point it at [llms.txt](https://eladiomejutogracia.github.io/nanoswarm/llms.txt),
+  the same reference in one file.
+- **Check a file yourself:** `node check.mjs shape.html` (the script is in the skill), or paste the element
+  into the playground's **Paste HTML**.
+
+The skill and `llms.txt` are generated from the code, so they always match the current version.
+
 ## JavaScript
 
 The element is built on a small API you can use directly:
@@ -142,7 +159,8 @@ tagged `vX.Y.Z` (needs an `NPM_TOKEN` repository secret).
 
 ```
 src/
-  element/   <nano-swarm>: the element, and its vocabulary as plain data (markup.ts)
+  element/   <nano-swarm>: the element, its vocabulary as plain data (markup.ts), the validator (check.ts)
+  ai/        generates the AI skill and llms.txt from the code
   formula/   parser, JS + GLSL code generation, noise
   sources/   formulas, motions (flow calibration), models, particle params
   audio/     Web Audio input, bands + spectrum
@@ -150,5 +168,11 @@ src/
   runtime/   pointer, auto quality, camera tilt
   swarm.ts   the engine behind the element
 examples/    the built-in creations, one <nano-swarm> per file
+.claude/skills/nanoswarm/   the AI skill (SKILL.md + check.mjs), generated
 web/         the playground
 ```
+
+## Contributing
+
+Creations, examples and code are all welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+Working with an AI agent? It will find [AGENTS.md](AGENTS.md).

@@ -31,9 +31,17 @@ export type AttributeName = keyof typeof ATTRIBUTES;
 export const ATTRIBUTE_NAMES = Object.keys(ATTRIBUTES) as AttributeName[];
 
 export const DEFAULT_BLOOM = 0.6;
+/** Accepted range of each numeric attribute; values outside are clamped. */
+export const NUMBER_RANGES = {
+    speed: [0, 10],
+    tilt: [0, 90],
+    particles: [1, 1e7],
+    sensitivity: [0, 5],
+    bloom: [0, 3],
+} as const satisfies Partial<Record<AttributeName, readonly [number, number]>>;
+export const HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 /** Longest opening tag kept on one line when formatting. */
 const MAX_TAG_LINE = 80;
-const HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 /** Options the element passes to the swarm, read from its attributes. */
 export interface ElementOptions {
@@ -49,9 +57,10 @@ export interface ElementOptions {
 
 export type AttributeReader = (name: AttributeName) => string | null;
 
-function number(value: string | null, min: number, max: number): number | undefined {
+function number(value: string | null, name: keyof typeof NUMBER_RANGES): number | undefined {
     if (value === null || value.trim() === '') return undefined;
     const n = Number(value);
+    const [min, max] = NUMBER_RANGES[name];
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : undefined;
 }
 
@@ -93,13 +102,13 @@ export function readOptions(get: AttributeReader): ElementOptions {
             colors: parseColors(get('colors')) ?? LOOK_DEFAULTS.colors,
             background: background && HEX_RE.test(background.trim()) ? hex6(background.trim()).toLowerCase() : LOOK_DEFAULTS.background,
             style: get('solid') !== null ? 'solid' : 'light',
-            bloom: bloom === null ? 0 : (number(bloom, 0, 3) ?? DEFAULT_BLOOM),
+            bloom: bloom === null ? 0 : (number(bloom, 'bloom') ?? DEFAULT_BLOOM),
         },
-        speed: number(get('speed'), 0, 10) ?? 1,
-        tilt: number(get('tilt'), 0, 90),
-        particles: number(get('particles'), 1, 1e7),
+        speed: number(get('speed'), 'speed') ?? 1,
+        tilt: number(get('tilt'), 'tilt'),
+        particles: number(get('particles'), 'particles'),
         backend: renderer === 'gpu' || renderer === 'cpu' ? renderer : 'auto',
-        sensitivity: number(get('sensitivity'), 0, 5) ?? 1,
+        sensitivity: number(get('sensitivity'), 'sensitivity') ?? 1,
         interactive: get('no-pointer') === null,
         autoRotate: get('no-rotate') === null,
     };
