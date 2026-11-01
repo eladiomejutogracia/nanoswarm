@@ -6,10 +6,12 @@ import { normalizePoints } from './params';
 export type ModelFormat = 'glb' | 'gltf' | 'obj' | 'stl' | 'ply';
 export type ModelInput = string | File | Blob | ArrayBuffer;
 
-const EXTENSION_RE = /\.(glb|gltf|obj|stl|ply)(?:[?#].*)?$/i;
+const EXTENSION_RE = /\.(glb|gltf|obj|stl|ply)$/i;
 
 export function detectModelFormat(name: string): ModelFormat | null {
-    const match = EXTENSION_RE.exec(name);
+    // Drop "?query" and "#hash" first: one regex doing both can take quadratic time on hostile URLs.
+    const path = name.split(/[?#]/, 1)[0];
+    const match = EXTENSION_RE.exec(path);
     return match ? (match[1].toLowerCase() as ModelFormat) : null;
 }
 

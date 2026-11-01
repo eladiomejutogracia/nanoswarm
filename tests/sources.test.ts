@@ -91,7 +91,16 @@ describe('models', () => {
     it('detects formats from names and URLs', () => {
         expect(detectModelFormat('robot.GLB')).toBe('glb');
         expect(detectModelFormat('/models/bunny.obj?v=2')).toBe('obj');
+        expect(detectModelFormat('scene.gltf#node')).toBe('gltf');
         expect(detectModelFormat('photo.png')).toBeNull();
+        expect(detectModelFormat('photo.png?file=robot.glb')).toBeNull();
+    });
+
+    it('detects formats in linear time, even from hostile URLs', () => {
+        const hostile = '.glb#'.repeat(20_000) + '\n'; // took seconds with the old single regex
+        const start = performance.now();
+        expect(detectModelFormat(hostile)).toBe('glb');
+        expect(performance.now() - start).toBeLessThan(100);
     });
 
     it('flattens a scene graph with world transforms and samples its surface', () => {
