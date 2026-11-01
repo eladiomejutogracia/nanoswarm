@@ -5,17 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NanoSwarm</title>
     <meta name="description" content="Particle swarms shaped by formulas, 3D models and sound — as one HTML element." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='%2300e5ff'%3E%3Ccircle cx='16' cy='6' r='3'/%3E%3Ccircle cx='7' cy='20' r='3'/%3E%3Ccircle cx='25' cy='20' r='3'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='4' fill='%23ff4081'/%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23000'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='9' cy='9' r='2.5'/%3E%3Ccircle cx='16' cy='9' r='2.5'/%3E%3Ccircle cx='23' cy='9' r='2.5'/%3E%3Ccircle cx='9' cy='16' r='2.5'/%3E%3Ccircle cx='23' cy='16' r='2.5'/%3E%3Ccircle cx='9' cy='23' r='2.5'/%3E%3Ccircle cx='16' cy='23' r='2.5'/%3E%3Ccircle cx='23' cy='23' r='2.5'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23D71921'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500..800&family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" />
     <link rel="stylesheet" href="./style.css" />
+    <!-- Apply a remembered theme before the first paint (otherwise the system theme applies). -->
+    <script>try { const t = localStorage.getItem('nanoswarm-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
 </head>
 <body>
     <!-- The page renders this element. Every control below just edits it. -->
     <nano-swarm id="swarm"></nano-swarm>
 
-    <div class="toolbar">
-        <button id="code-toggle" aria-expanded="false" aria-controls="code-panel">&lt;/&gt; Code</button>
-        <button id="panel-toggle" aria-expanded="true" aria-controls="panel">Hide panel</button>
-    </div>
+    <header class="topbar">
+        <div class="brand">
+            <h1>NanoSwarm</h1>
+            <p>Particles shaped by a formula, a 3D model or a song.</p>
+        </div>
+        <nav class="toolbar" aria-label="View">
+            <button id="theme-toggle" class="ghost" aria-label="Switch theme">Light</button>
+            <button id="panel-toggle" class="ghost" aria-expanded="true" aria-controls="panel">Controls</button>
+            <button id="code-toggle" class="ghost" aria-expanded="false" aria-controls="code-panel">&lt;/&gt; Code</button>
+        </nav>
+    </header>
 
     <aside id="code-panel" class="code-panel hidden" aria-label="Code">
         <header class="code-head">
@@ -29,12 +41,7 @@
         <pre><code id="code"></code></pre>
     </aside>
 
-    <aside id="panel" class="panel">
-        <header class="panel-head">
-            <h1>NanoSwarm</h1>
-            <p>Particles shaped by a formula, a 3D model or a song.</p>
-        </header>
-
+    <aside id="panel" class="panel" aria-label="Controls">
         <section>
             <h2>Examples</h2>
             <div id="examples" class="chips" role="group" aria-label="Examples"></div>
@@ -45,10 +52,10 @@
                 <h2>Formula</h2>
                 <button id="help-toggle" class="link" aria-expanded="false" aria-controls="help">What can I write?</button>
             </div>
-            <label class="field">Name <input id="title" type="text" placeholder="Untitled" maxlength="60" /></label>
+            <label class="field"><span>Name</span><input id="title" type="text" placeholder="Untitled" maxlength="60" /></label>
             <textarea id="formula" spellcheck="false" autocapitalize="off" autocomplete="off" rows="9" aria-label="Formula" aria-describedby="formula-status"></textarea>
             <p id="formula-status" class="status" role="status"></p>
-            <label class="slider" title="How fast t runs in shapes, and how fast particles travel in motions">Speed <output id="speed-out"></output>
+            <label class="slider" title="How fast t runs in shapes, and how fast particles travel in motions"><span>Speed</span><output id="speed-out"></output>
                 <input id="speed" type="range" min="0" max="3" step="0.05" />
             </label>
             <div id="help" class="help" hidden>
@@ -87,19 +94,19 @@
                 <label title="Bottom (c = 0)"><input id="color-0" type="color" /></label>
                 <label title="Middle"><input id="color-1" type="color" /></label>
                 <label title="Top (c = 1)"><input id="color-2" type="color" /></label>
-                <label title="Background" class="bg"><input id="background" type="color" /> background</label>
+                <label title="Background" class="bg"><input id="background" type="color" /> Background</label>
             </div>
-            <label class="check"><input id="solid" type="checkbox" /> Solid <small>(opaque, shaded — good for 3D models)</small></label>
-            <label class="check"><input id="bloom" type="checkbox" /> Bloom <small>(GPU only)</small></label>
+            <label class="check"><span>Solid <small>Opaque, shaded — good for 3D models</small></span><input id="solid" type="checkbox" /></label>
+            <label class="check"><span>Bloom <small>GPU only</small></span><input id="bloom" type="checkbox" /></label>
         </section>
 
         <section>
             <h2>View</h2>
-            <label class="slider">Camera tilt <output id="tilt-out"></output>
+            <label class="slider"><span>Camera tilt</span><output id="tilt-out"></output>
                 <input id="tilt" type="range" min="0" max="90" step="1" />
             </label>
-            <label class="check"><input id="pointer" type="checkbox" /> Pointer pushes particles</label>
-            <label class="check"><input id="rotate" type="checkbox" /> Auto-rotate</label>
+            <label class="check"><span>Pointer pushes particles</span><input id="pointer" type="checkbox" /></label>
+            <label class="check"><span>Auto-rotate</span><input id="rotate" type="checkbox" /></label>
         </section>
 
         <section>
@@ -113,19 +120,19 @@
             </div>
             <p id="track" class="status muted"></p>
             <div class="meters" aria-hidden="true">
-                <div><span>bass</span><i id="m-bass"></i></div>
-                <div><span>mid</span><i id="m-mid"></i></div>
-                <div><span>treble</span><i id="m-treble"></i></div>
-                <div><span>level</span><i id="m-level"></i></div>
+                <div><span>Bass</span><i id="m-bass"></i></div>
+                <div><span>Mid</span><i id="m-mid"></i></div>
+                <div><span>Treble</span><i id="m-treble"></i></div>
+                <div><span>Level</span><i id="m-level"></i></div>
             </div>
-            <label class="slider">Sensitivity <output id="sensitivity-out"></output>
+            <label class="slider"><span>Sensitivity</span><output id="sensitivity-out"></output>
                 <input id="sensitivity" type="range" min="0.3" max="2.5" step="0.1" />
             </label>
         </section>
 
         <section>
             <h2>Performance</h2>
-            <label class="slider">Particles <output id="particles-out"></output>
+            <label class="slider"><span>Particles</span><output id="particles-out"></output>
                 <input id="particles" type="range" min="0" max="7" step="1" />
             </label>
             <div class="segmented" role="group" aria-label="Renderer">

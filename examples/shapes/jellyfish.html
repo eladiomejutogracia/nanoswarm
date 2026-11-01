@@ -1,0 +1,20 @@
+<nano-swarm title="Jellyfish" colors="#2a0845 #ff4fd8 #a0f0ff" background="#03010a" tilt="12">
+  # r splits the particles: 60% bell, 40% tentacles
+  bell = step(r, 0.6)
+  beat = 0.5 + 0.5 * sin(1.6*t)
+  # the bell: a dome that squeezes and opens
+  h = v / TAU
+  ring = (2.4 + 0.6*beat) * sin(1.75*h)
+  top = 2.2 * cos(1.75*h) * (1 - 0.15*beat) + 1
+  # 12 tentacles hang from the rim and sway
+  k = floor(u / TAU * 12)
+  a = k / 12 * TAU + 0.3 * sin(t + k)
+  L = h * 5
+  wob = 0.35 * sin(2.2*L - 2.5*t + k) * (L / 5)
+  rt = 2.1 * (1 - 0.25*h) + wob
+  x = mix(rt * cos(a), ring * cos(u), bell)
+  z = mix(rt * sin(a), ring * sin(u), bell)
+  y = mix(0.9 - L, top, bell)
+  # bright dome, tentacles fading out
+  c = mix(0.75 - 0.6*h, 1 - 0.5*h, bell)
+</nano-swarm>

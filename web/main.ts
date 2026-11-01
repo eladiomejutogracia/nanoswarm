@@ -38,6 +38,7 @@ const GROUPS = { sound: 'Sound', shapes: 'Shapes', attractors: 'Attractors' } as
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const ui = {
+    themeToggle: $<HTMLButtonElement>('theme-toggle'),
     panel: $('panel'),
     panelToggle: $<HTMLButtonElement>('panel-toggle'),
     codePanel: $('code-panel'),
@@ -387,35 +388,43 @@ function loadPaste(): void {
 
 // ─── Layout ──────────────────────────────────────────────────────
 
+// The element is sized to the space the panels leave free (style.css), so the camera frames
+// exactly what you can see — no offsets to compute here.
 const isOpen = (panel: HTMLElement) => !panel.classList.contains('hidden');
 
-/** Center the swarm between the open panels (layout offsets, not mid-animation rects). */
-function centerInFreeSpace(): void {
-    const swarm = el.swarm;
-    if (!swarm) return;
-    if (window.innerWidth <= 640) {
-        const sheet = [ui.panel, ui.codePanel].find(isOpen);
-        swarm.setCenterOffset(0, sheet ? -(window.innerHeight - sheet.offsetTop) / 2 : 0);
-        return;
-    }
-    const left = isOpen(ui.panel) ? ui.panel.offsetLeft + ui.panel.offsetWidth : 0;
-    const right = isOpen(ui.codePanel) ? ui.codePanel.offsetLeft : window.innerWidth;
-    swarm.setCenterOffset((left + right - window.innerWidth) / 2, 0);
+// ─── Theme: follows the system until you pick one ────────────────
+// The theme styles the playground only; a creation keeps its own `background`.
+
+const THEME_KEY = 'nanoswarm-theme';
+const systemLight = window.matchMedia('(prefers-color-scheme: light)');
+const currentTheme = () => document.documentElement.dataset.theme ?? (systemLight.matches ? 'light' : 'dark');
+
+function renderThemeToggle(): void {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    ui.themeToggle.textContent = next === 'light' ? 'Light' : 'Dark';
+    ui.themeToggle.setAttribute('aria-label', `Switch to the ${next} theme`);
 }
 
-function togglePanel(panel: HTMLElement, button: HTMLButtonElement, open: boolean, labels: [string, string]): void {
+function toggleTheme(): void {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try {
+        localStorage.setItem(THEME_KEY, next);
+    } catch {
+        // storage blocked: the choice lasts until the page closes
+    }
+    renderThemeToggle();
+}
+
+/** Top-bar toggles keep one label; aria-expanded (shown as brightness) says whether the panel is open. */
+function togglePanel(panel: HTMLElement, button: HTMLButtonElement, open: boolean): void {
     panel.classList.toggle('hidden', !open);
-    button.textContent = open ? labels[1] : labels[0];
     button.setAttribute('aria-expanded', String(open));
     if (open && window.innerWidth <= 640) { // phones: one sheet at a time
         const other = panel === ui.panel ? ui.codePanel : ui.panel;
         if (isOpen(other)) (other === ui.panel ? ui.panelToggle : ui.codeToggle).click();
     }
-    centerInFreeSpace();
 }
-
-const PANEL_LABELS: [string, string] = ['Show panel', 'Hide panel'];
-const CODE_LABELS: [string, string] = ['</> Code', '</> Hide code'];
 
 // ─── Static parts of the panel ───────────────────────────────────
 
@@ -445,7 +454,8 @@ function renderPaletteButtons(): void {
         const button = document.createElement('button');
         button.title = palette.name;
         button.setAttribute('aria-label', `${palette.name} colors`);
-        button.style.background = `linear-gradient(135deg, ${palette.colors.split(' ').join(', ')})`;
+        const [a, b, c] = palette.colors.split(' ');
+        button.style.background = `linear-gradient(90deg, ${a} 0 33.3%, ${b} 33.3% 66.7%, ${c} 66.7%)`; // three bands, not a blend
         button.addEventListener('click', () => {
             setAttr('colors', palette.colors);
             setAttr('background', palette.background);
@@ -518,9 +528,10 @@ function wire(): void {
         }
     });
 
-    ui.panelToggle.addEventListener('click', () => togglePanel(ui.panel, ui.panelToggle, !isOpen(ui.panel), PANEL_LABELS));
-    ui.codeToggle.addEventListener('click', () => togglePanel(ui.codePanel, ui.codeToggle, !isOpen(ui.codePanel), CODE_LABELS));
-    window.addEventListener('resize', centerInFreeSpace);
+    ui.themeToggle.addEventListener('click', toggleTheme);
+    systemLight.addEventListener('change', renderThemeToggle);
+    ui.panelToggle.addEventListener('click', () => togglePanel(ui.panel, ui.panelToggle, !isOpen(ui.panel)));
+    ui.codeToggle.addEventListener('click', () => togglePanel(ui.codePanel, ui.codeToggle, !isOpen(ui.codePanel)));
 
     // Space toggles play/pause when not typing.
     window.addEventListener('keydown', (event) => {
@@ -552,13 +563,15 @@ function wire(): void {
     });
 }
 
+const METER_SEGMENTS = 8; // matches the 12.5% segments in style.css
+
 function animateMeters(): void {
     const bands = el.swarm?.bands;
     if (bands) {
-        ui.meters.bass.style.transform = `scaleX(${bands.bass})`;
-        ui.meters.mid.style.transform = `scaleX(${bands.mid})`;
-        ui.meters.treble.style.transform = `scaleX(${bands.treble})`;
-        ui.meters.level.style.transform = `scaleX(${bands.level})`;
+        for (const band of ['bass', 'mid', 'treble', 'level'] as const) {
+            const lit = Math.round(Math.min(bands[band], 1) * METER_SEGMENTS) / METER_SEGMENTS; // whole segments only
+            ui.meters[band].style.setProperty('--level', String(lit));
+        }
     }
     requestAnimationFrame(animateMeters);
 }
@@ -568,10 +581,11 @@ function animateMeters(): void {
 renderExampleButtons();
 renderPaletteButtons();
 renderHelp();
+renderThemeToggle();
 wire();
 const FIRST_EXAMPLE = 'Lorenz'; // shows the newest idea first: a formula that moves
 applyMarkup(decodeShare(location.hash) ?? (examples.find((e) => titleOf(e.markup) === FIRST_EXAMPLE) ?? examples[0]).markup);
-togglePanel(ui.codePanel, ui.codeToggle, window.innerWidth >= WIDE_SCREEN, CODE_LABELS);
+togglePanel(ui.codePanel, ui.codeToggle, window.innerWidth >= WIDE_SCREEN);
 render();
 setInterval(() => {
     renderAudio();

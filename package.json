@@ -4,6 +4,9 @@
   "description": "Particle swarms shaped by formulas, 3D models and sound — as one HTML element.",
   "author": "Eladio Mejuto",
   "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eladiomejutogracia/nanoswarm.git"

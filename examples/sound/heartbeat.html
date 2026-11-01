@@ -1,0 +1,14 @@
+<nano-swarm title="Heartbeat" colors="#5c0011 #ff1744 #ffccbc" background="#0a0003" tilt="4" solid no-rotate>
+  # The classic heart curve, puffed up like a pillow.
+  # It beats on its own, and harder with the bass
+  s = sin(u)
+  hx = 16 * s*s*s
+  hy = 13*cos(u) - 5*cos(2*u) - 2*cos(3*u) - cos(4*u)
+  f = sin(v / 2)
+  beat = abs(sin(2.2*t))^12
+  k = 0.21 * (1 + 0.07*beat + 0.25*bass)
+  x = k * hx * f
+  y = k * (hy + 3) * f
+  z = 1.3 * cos(v / 2) * (1 + 0.2*bass)
+  c = 0.2 + 0.7 * f + 0.1 * level
+</nano-swarm>

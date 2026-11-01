@@ -22,6 +22,8 @@ GitHub Copilot, and validates what it writes.
 
 ## 3. Change the code
 
+You need Node 24 or later; CI uses the version in `.nvmrc` (`nvm use` picks it up).
+
 ```bash
 npm install
 npm run dev        # playground at http://localhost:5173
