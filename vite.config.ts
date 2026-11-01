@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'node:path';
 
+const root = import.meta.dirname;
+
 // `vite` / `vite build`         → the playground web page (web/)
 // `vite build --mode lib`       → dist/nanoswarm.js — ES module, three.js as a peer dependency
 // `vite build --mode element`   → dist/nano-swarm.js — one drop-in <script>, three.js included
@@ -13,11 +15,11 @@ export default defineConfig(({ mode }) => {
                 emptyOutDir: true,
                 // ESM only: three's example modules (OrbitControls, GPGPU…) have no UMD globals.
                 lib: {
-                    entry: resolve(__dirname, 'src/index.ts'),
+                    entry: resolve(root, 'src/index.ts'),
                     formats: ['es'],
                     fileName: 'nanoswarm',
                 },
-                rollupOptions: {
+                rolldownOptions: {
                     external: [/^three(\/.*)?$/],
                 },
             },
@@ -32,11 +34,11 @@ export default defineConfig(({ mode }) => {
                 minify: false, // keep it readable: people (and agents) may open it
                 target: 'node18',
                 lib: {
-                    entry: resolve(__dirname, 'src/element/cli.ts'),
+                    entry: resolve(root, 'src/element/cli.ts'),
                     formats: ['es'],
                     fileName: () => 'check.mjs',
                 },
-                rollupOptions: {
+                rolldownOptions: {
                     external: [/^node:/],
                     output: { banner: '#!/usr/bin/env node\n// Generated from src/element/cli.ts by `npm run build:check`. Do not edit.' },
                 },
@@ -51,13 +53,10 @@ export default defineConfig(({ mode }) => {
                 emptyOutDir: false, // runs after the lib build
                 chunkSizeWarningLimit: 900,
                 lib: {
-                    entry: resolve(__dirname, 'src/element/standalone.ts'),
+                    entry: resolve(root, 'src/element/standalone.ts'),
                     formats: ['iife'],
                     name: 'NanoSwarm',
                     fileName: () => 'nano-swarm.js',
-                },
-                rollupOptions: {
-                    output: { inlineDynamicImports: true }, // model loaders are imported on demand
                 },
             },
         };
@@ -67,9 +66,9 @@ export default defineConfig(({ mode }) => {
         root: 'web',
         base: './',
         // three.js alone is ~600 kB minified; that is expected for the playground.
-        build: { outDir: resolve(__dirname, 'dist-web'), emptyOutDir: true, chunkSizeWarningLimit: 900 },
+        build: { outDir: resolve(root, 'dist-web'), emptyOutDir: true, chunkSizeWarningLimit: 900 },
         test: {
-            root: __dirname,
+            root,
             include: ['tests/**/*.test.ts'],
             environment: 'node',
         },

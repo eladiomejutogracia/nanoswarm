@@ -1,14 +1,14 @@
-# Publishes the package to npm when a GitHub release is published.
-# Releases marked as "pre-release" (alphas, betas) are NOT published to npm,
-# so they can mark milestones on GitHub alone.
+# Runs when a GitHub release is published (tag vX.Y.Z, matching "version" in package.json):
 #
-# One-time setup: create an npm "Automation" access token and add it to the
-# repository as the secret NPM_TOKEN (Settings → Secrets and variables → Actions).
-# Then: bump "version" in package.json, push, and publish a release tagged vX.Y.Z.
+# 1. Every release, pre-releases included: builds and attaches nano-swarm.js (the drop-in
+#    script, pinned to this version) and nanoswarm-skill.zip (the AI skill) to the release.
+# 2. Full releases only: publishes the package to npm. Pre-releases (alphas, betas) stay on GitHub.
 #
+# npm setup, once: create an npm "Automation" access token and add it to the repository as
+# the secret NPM_TOKEN (Settings → Secrets and variables → Actions).
 # --provenance links each npm version to this workflow run and commit, so anyone can
 # verify on npmjs.com that the package was built here and not on someone's laptop.
-name: Publish to npm
+name: Release
 
 on:
   release:
@@ -16,25 +16,45 @@ on:
 
 permissions:
   contents: read
-  id-token: write # signs the provenance statement
 
 jobs:
-  publish:
-    if: ${{ !github.event.release.prerelease }}
+  assets:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # uploads files to the release
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
+          cache: npm
+      - name: Release tag must match package.json
+        run: test "v$(node -p "require('./package.json').version")" = "${{ github.event.release.tag_name }}"
+      - run: npm ci
+      - run: npm run build
+      - run: cd .claude/skills && zip -r ../../nanoswarm-skill.zip nanoswarm
+      - run: gh release upload "${{ github.event.release.tag_name }}" dist/nano-swarm.js nanoswarm-skill.zip --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  npm:
+    if: ${{ !github.event.release.prerelease }}
+    needs: assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # signs the provenance statement
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Release tag must match package.json
-        run: test "v$(node -p "require('./package.json').version")" = "${{ github.event.release.tag_name }}"
       - run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

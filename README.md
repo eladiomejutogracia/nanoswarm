@@ -21,7 +21,8 @@ Particle swarms shaped by **formulas**, **3D models** and **sound** — as one H
 
 The formula is the element's text. Everything else is an attribute. That's the whole idea.
 The script is served from the [playground](https://eladiomejutogracia.github.io/nanoswarm/) site and always
-tracks the latest version; an npm package with pinned versions will come later.
+tracks the latest version; for a fixed version, download `nano-swarm.js` from a
+[release](https://github.com/eladiomejutogracia/nanoswarm/releases) and host it yourself.
 The script includes three.js; it picks the GPU when the browser can and the CPU when it can't.
 
 The [playground](web/) is a live editor for one of these elements: every control just edits it,
@@ -162,8 +163,9 @@ npm run build:web   # playground → dist-web/
 
 GitHub Actions: **CI** runs types, tests and both builds on every push, and on pull requests also
 checks new dependencies for known vulnerabilities; **Playground** deploys `web/` to GitHub Pages;
-**Publish to npm** runs when a release is published — bump `version` in `package.json`, merge, then
-publish a release tagged `vX.Y.Z` (needs an `NPM_TOKEN` repository secret). Pre-releases stay on GitHub.
+**Release** runs when a release is published — bump `version` in `package.json`, merge, then
+publish a release tagged `vX.Y.Z`: it attaches `nano-swarm.js` (pinned to that version) and the AI skill
+to the release, and publishes to npm (needs an `NPM_TOKEN` repository secret). Pre-releases stay on GitHub.
 CodeQL scans the code for security issues, and Dependabot proposes dependency updates every week.
 Found a security problem? See [SECURITY.md](SECURITY.md).
 

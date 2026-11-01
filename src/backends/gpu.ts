@@ -96,7 +96,7 @@ void main() {
 }
 
 /** xyz triplets → RGBA texels of a size×size texture (unused texels stay 0). */
-export function packRGBA(data: Float32Array, size: number, into = new Float32Array(size * size * 4)): Float32Array {
+export function packRGBA(data: Float32Array, size: number, into: Float32Array = new Float32Array(size * size * 4)): Float32Array {
     const count = data.length / 3;
     for (let i = 0; i < count; i++) {
         into[i * 4] = data[i * 3];
