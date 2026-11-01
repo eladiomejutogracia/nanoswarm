@@ -837,7 +837,7 @@ function bounds(points) {
 /** Every attribute the element understands (plus the standard `title`). */
 var ATTRIBUTES = {
 	title: "A name for this creation",
-	model: "A 3D model file to use instead of a formula (.glb .gltf .obj .stl .ply)",
+	model: "A 3D model file to use instead of a formula (.glb .gltf .obj .stl .ply). Animated .glb/.gltf files move",
 	colors: "Up to three colors, bottom → top (or c = 0 → 1)",
 	background: "Background color",
 	solid: "Opaque, shaded particles instead of glowing ones",

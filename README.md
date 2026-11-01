@@ -83,12 +83,12 @@ the text is never run directly, so formulas from a shared link are safe.
 | Attribute | |
 |---|---|
 | `title` | A name for the creation |
-| `model="robot.glb"` | Use a 3D model instead of a formula (GLB, GLTF, OBJ, STL, PLY) |
+| `model="robot.glb"` | Use a 3D model instead of a formula (GLB, GLTF, OBJ, STL, PLY). An animated GLB/GLTF plays its first animation in a loop |
 | `colors="#a #b #c"` | Up to three colors, bottom → top (or `c` = 0 → 1) |
 | `background="#000"` | Background color |
 | `solid` | Opaque, shaded particles — gives models volume |
 | `bloom` | Glow on bright areas (GPU only); `bloom="0.8"` for a strength |
-| `speed="2"` | Pace: multiplies `t` for shapes and travel speed for motions |
+| `speed="2"` | Pace: multiplies `t` for shapes, travel speed for motions, and playback of animated models (`0` freezes) |
 | `tilt="40"` | Camera height in degrees: 0 side view, 90 top-down |
 | `audio="song.mp3"` / `audio="mic"` | Sound to react to — starts on the first click (browser rule) |
 | `sensitivity="1.5"` | How strongly sound moves things |

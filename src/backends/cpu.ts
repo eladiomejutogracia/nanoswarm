@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { NO_COLOR, type CompiledFormula, type FormulaFrame } from '../formula';
 import type { Look } from '../looks';
 import type { Target } from '../sources';
+import type { AnimatedSurface } from '../sources/animation';
 import { FLOW_ESCAPE, particleSeeds, stepFlow, substepsFor, type FlowField } from '../sources/flow';
 import { createParticleParams, createSpawnCloud } from '../sources/params';
 import { applyLook, createPointsMaterial } from './material';
@@ -41,6 +42,7 @@ export class CpuBackend implements Backend {
     private formula: CompiledFormula | null = null;
     private formulaDirty = false;
     private flow: FlowState | null = null;
+    private animated: AnimatedSurface | null = null;
 
     constructor(readonly count: number) {
         this.params = createParticleParams(count);
@@ -63,6 +65,7 @@ export class CpuBackend implements Backend {
     setTarget(target: Target): void {
         this.formula = null;
         this.flow = null;
+        this.animated = null;
 
         if (target.kind === 'shape') {
             this.formula = target.formula;
@@ -77,6 +80,8 @@ export class CpuBackend implements Backend {
                 mid: new Float32Array(this.count * 3),
             };
             this.writeFlowTargets(this.flow);
+        } else if (target.kind === 'animated') {
+            this.animated = target.model.sample(this.count); // posed on the next update
         } else {
             this.targets.set(target.sample(this.count));
         }
@@ -122,6 +127,8 @@ export class CpuBackend implements Backend {
             if (colored) this.geometry.attributes.aColor.needsUpdate = true;
             this.writeFlowTargets(flow);
         }
+
+        this.animated?.pose(time, this.targets);
 
         stepParticles(this.positions, this.velocities, this.speeds, this.rand, { dt, targets: this.targets, pointer });
 

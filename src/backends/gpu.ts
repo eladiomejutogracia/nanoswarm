@@ -4,6 +4,7 @@ import { SPECTRUM_BINS } from '../audio/bands';
 import { GLSL_PRELUDE, NO_COLOR } from '../formula';
 import type { Look } from '../looks';
 import type { Target } from '../sources';
+import type { AnimatedSurface } from '../sources/animation';
 import { FLOW_ESCAPE, MAX_SUBSTEPS, particleSeeds, substepsFor, type FlowField } from '../sources/flow';
 import { createParticleParams, createSpawnCloud } from '../sources/params';
 import { applyLook, createPointsMaterial } from './material';
@@ -149,6 +150,8 @@ export class GpuBackend implements Backend {
     };
     private currentShader = '';
     private flow: FlowField | null = null;
+    /** An animated model: posed on the CPU (shared with the CPU backend), uploaded as the static texture. */
+    private animated: { surface: AnimatedSurface; points: Float32Array } | null = null;
 
     constructor(renderer: THREE.WebGLRenderer, readonly count: number, dataType: THREE.TextureDataType = THREE.FloatType) {
         this.size = Math.ceil(Math.sqrt(count));
@@ -201,6 +204,7 @@ export class GpuBackend implements Backend {
     setTarget(target: Target): void {
         const u = this.uniforms;
         this.flow = null;
+        this.animated = null;
         u.uFlowCenter.value.set(0, 0, 0);
         u.uFlowScale.value = 1;
 
@@ -214,6 +218,9 @@ export class GpuBackend implements Backend {
             u.uFlowReset.value = 1; // first frame: every particle starts on its seed
             this.flow = field;
             this.useTargetShader({ kind: 'motion', glsl: field.formula.glsl });
+        } else if (target.kind === 'animated') {
+            this.animated = { surface: target.model.sample(this.count), points: new Float32Array(this.count * 3) };
+            this.useTargetShader({ kind: 'static' }); // posed on the next update
         } else {
             this.replaceTexture('staticTexture', 'tStatic', target.sample(this.count));
             this.useTargetShader({ kind: 'static' });
@@ -254,6 +261,12 @@ export class GpuBackend implements Backend {
             u.uFlowSubsteps.value = substeps;
         }
         u.uPointer.value.set(pointer.x, pointer.y, pointer.z, pointer.active ? 1 : 0);
+
+        const animated = this.animated;
+        if (animated?.surface.pose(time, animated.points)) {
+            packRGBA(animated.points, this.size, this.staticTexture.image.data as unknown as Float32Array);
+            this.staticTexture.needsUpdate = true;
+        }
 
         this.compute.compute();
         u.uFlowReset.value = 0;

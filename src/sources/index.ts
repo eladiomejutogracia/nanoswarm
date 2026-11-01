@@ -1,6 +1,7 @@
 import { compileFormula, type CompiledFormula } from '../formula';
 import { calibrateFlow, type FlowField } from './flow';
-import { detectModelFormat, loadModelGeometry, sampleSurface, type ModelFormat, type ModelInput } from './model';
+import { AnimatedModel } from './animation';
+import { detectModelFormat, loadModel, sampleSurface, type ModelFormat, type ModelInput } from './model';
 import { normalizePoints, resamplePoints } from './params';
 
 /**
@@ -32,7 +33,8 @@ export const DEFAULT_FORMULA = [
 export type Target =
     | { kind: 'shape'; formula: CompiledFormula }
     | { kind: 'motion'; field: FlowField }
-    | { kind: 'points'; sample(count: number): Float32Array };
+    | { kind: 'points'; sample(count: number): Float32Array }
+    | { kind: 'animated'; model: AnimatedModel };
 
 function pointsTarget(sample: (count: number) => Float32Array): Target {
     let cached: { count: number; points: Float32Array } | null = null;
@@ -57,8 +59,9 @@ export async function resolveSource(source: Source): Promise<Target> {
     if ('formula' in source) return formulaTarget(source.formula);
 
     if ('model' in source) {
-        const geometry = await loadModelGeometry(source.model, source.format);
-        return pointsTarget((count) => sampleSurface(geometry, count));
+        const model = await loadModel(source.model, source.format);
+        if (model instanceof AnimatedModel) return { kind: 'animated', model };
+        return pointsTarget((count) => sampleSurface(model, count));
     }
 
     if ('points' in source) {
