@@ -3,7 +3,7 @@
 Particle swarms shaped by **formulas**, **3D models** and **sound** — as one HTML element.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nanoswarm@2/dist/nano-swarm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nanoswarm@1/dist/nano-swarm.js"></script>
 
 <nano-swarm title="Torus" colors="#ff6e7f #bf5af2 #0a84ff" solid>
   R = 3 + 1.2 * cos(v)
@@ -132,6 +132,11 @@ npm run typecheck
 npm run build       # dist/nanoswarm.js (ES module, three.js peer) + dist/nano-swarm.js (drop-in)
 npm run build:web   # playground → dist-web/
 ```
+
+GitHub Actions: **CI** runs types, tests and both builds on every push; **Playground** deploys
+`web/` to GitHub Pages (public repository, Pages source set to "GitHub Actions"); **Publish to npm**
+runs when a release is published — bump `version` in `package.json`, push, then publish a release
+tagged `vX.Y.Z` (needs an `NPM_TOKEN` repository secret).
 
 ```
 src/

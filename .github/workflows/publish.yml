@@ -1,0 +1,30 @@
+# Publishes the package to npm when a GitHub release is published.
+#
+# One-time setup: create an npm "Automation" access token and add it to the
+# repository as the secret NPM_TOKEN (Settings → Secrets and variables → Actions).
+# Then: bump "version" in package.json, push, and publish a release tagged vX.Y.Z.
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Release tag must match package.json
+        run: test "v$(node -p "require('./package.json').version")" = "${{ github.event.release.tag_name }}"
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

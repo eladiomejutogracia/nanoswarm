@@ -1,7 +1,17 @@
 {
   "name": "nanoswarm",
-  "version": "2.0.0-alpha.0",
+  "version": "1.0.0",
   "description": "Particle swarms shaped by formulas, 3D models and sound — as one HTML element.",
+  "author": "Eladio Mejuto",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eladiomejutogracia/nanoswarm.git"
+  },
+  "homepage": "https://github.com/eladiomejutogracia/nanoswarm#readme",
+  "bugs": {
+    "url": "https://github.com/eladiomejutogracia/nanoswarm/issues"
+  },
   "type": "module",
   "module": "dist/nanoswarm.js",
   "types": "dist/types/index.d.ts",
@@ -14,6 +24,8 @@
       "default": "./dist/nano-swarm.js"
     }
   },
+  "unpkg": "dist/nano-swarm.js",
+  "jsdelivr": "dist/nano-swarm.js",
   "sideEffects": false,
   "files": [
     "dist"
@@ -44,8 +56,5 @@
     "audio-visualizer",
     "parametric",
     "formula"
-  ],
-  "license": "MIT",
-  "unpkg": "dist/nano-swarm.js",
-  "jsdelivr": "dist/nano-swarm.js"
+  ]
 }
