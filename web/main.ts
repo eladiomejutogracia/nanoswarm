@@ -392,12 +392,11 @@ function loadPaste(): void {
 // exactly what you can see — no offsets to compute here.
 const isOpen = (panel: HTMLElement) => !panel.classList.contains('hidden');
 
-// ─── Theme: follows the system until you pick one ────────────────
+// ─── Theme: dark unless you pick light ───────────────────────────
 // The theme styles the playground only; a creation keeps its own `background`.
 
 const THEME_KEY = 'nanoswarm-theme';
-const systemLight = window.matchMedia('(prefers-color-scheme: light)');
-const currentTheme = () => document.documentElement.dataset.theme ?? (systemLight.matches ? 'light' : 'dark');
+const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
 function renderThemeToggle(): void {
     const next = currentTheme() === 'dark' ? 'light' : 'dark';
@@ -456,10 +455,7 @@ function renderPaletteButtons(): void {
         button.setAttribute('aria-label', `${palette.name} colors`);
         const [a, b, c] = palette.colors.split(' ');
         button.style.background = `linear-gradient(90deg, ${a} 0 33.3%, ${b} 33.3% 66.7%, ${c} 66.7%)`; // three bands, not a blend
-        button.addEventListener('click', () => {
-            setAttr('colors', palette.colors);
-            setAttr('background', palette.background);
-        });
+        button.addEventListener('click', () => setAttr('colors', palette.colors)); // the background stays yours
         ui.palettes.append(button);
     }
 }
@@ -529,7 +525,6 @@ function wire(): void {
     });
 
     ui.themeToggle.addEventListener('click', toggleTheme);
-    systemLight.addEventListener('change', renderThemeToggle);
     ui.panelToggle.addEventListener('click', () => togglePanel(ui.panel, ui.panelToggle, !isOpen(ui.panel)));
     ui.codeToggle.addEventListener('click', () => togglePanel(ui.codePanel, ui.codeToggle, !isOpen(ui.codePanel)));
 

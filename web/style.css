@@ -31,24 +31,7 @@
     color-scheme: dark;
 }
 
-/* Light: a printed technical manual. */
-@media (prefers-color-scheme: light) {
-    :root:not([data-theme='dark']) {
-        --page: #f5f5f5;
-        --surface: #ffffff;
-        --border: #e8e8e8;
-        --border-visible: #cccccc;
-        --text-disabled: #999999;
-        --text-secondary: #666666;
-        --text-primary: #1a1a1a;
-        --text-display: #000000;
-        --accent-text: #c4161d;
-        --success: #2f7a42;
-        --warning: #8a6a12;
-        --interactive: #007aff;
-        color-scheme: light;
-    }
-}
+/* Light, when picked: a printed technical manual. Dark is the default. */
 :root[data-theme='light'] {
     --page: #f5f5f5;
     --surface: #ffffff;

@@ -16,6 +16,9 @@ import { AutoQuality } from './runtime/quality';
 import { DEFAULT_VIEW, FIELD_OF_VIEW, ViewTween, verticalFov } from './runtime/view';
 import { DEFAULT_FORMULA, resolveSource, type Source, type Target } from './sources';
 
+/** Higher than three's default: on a dark background only dense, bright areas glow. */
+const BLOOM_THRESHOLD = 0.35;
+
 export interface SwarmOptions {
     /** Formula text, { formula }, { model } or { points }. Default: a sphere. */
     source?: Source;
@@ -333,7 +336,8 @@ export class Swarm {
     // ─── Rendering ──────────────────────────────────────────────────
 
     private applyLook(): void {
-        this.scene.background = new THREE.Color(this.look.background);
+        const background = new THREE.Color(this.look.background);
+        this.scene.background = background;
         const pixelRatio = Math.min(window.devicePixelRatio, this.backend.kind === 'gpu' ? 2 : 1);
         this.renderer.setPixelRatio(pixelRatio);
         this.backend.setLook(this.look, pixelRatio);
@@ -342,8 +346,7 @@ export class Swarm {
         if (wantsBloom && !this.composer) {
             this.composer = new EffectComposer(this.renderer);
             this.composer.addPass(new RenderPass(this.scene, this.camera));
-            // Higher threshold than three's default: only dense, bright areas glow.
-            this.bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), this.look.bloom, 0.35, 0.35);
+            this.bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), this.look.bloom, 0.35, BLOOM_THRESHOLD);
             this.composer.addPass(this.bloomPass);
             this.composer.addPass(new OutputPass());
         } else if (!wantsBloom && this.composer) {
@@ -351,7 +354,12 @@ export class Swarm {
             this.composer = null;
             this.bloomPass = null;
         }
-        if (this.bloomPass) this.bloomPass.strength = this.look.bloom;
+        if (this.bloomPass) {
+            this.bloomPass.strength = this.look.bloom;
+            // Only what is brighter than the background glows — never the background itself.
+            const luminance = 0.2126 * background.r + 0.7152 * background.g + 0.0722 * background.b;
+            this.bloomPass.threshold = Math.max(BLOOM_THRESHOLD, luminance + 0.1);
+        }
         this.resize();
     }
 

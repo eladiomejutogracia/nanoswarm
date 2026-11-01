@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@500..800&family=Space+Grotesk:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" />
     <link rel="stylesheet" href="./style.css" />
-    <!-- Apply a remembered theme before the first paint (otherwise the system theme applies). -->
-    <script>try { const t = localStorage.getItem('nanoswarm-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
+    <!-- Apply a remembered theme before the first paint (otherwise dark). -->
+    <script>try { if (localStorage.getItem('nanoswarm-theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch {}</script>
 </head>
 <body>
     <!-- The page renders this element. Every control below just edits it. -->
