@@ -29,8 +29,10 @@ interface Placement {
 }
 
 /**
- * A model that moves: its first animation clip loops, paced by formula time `t`
- * (so the `speed` attribute sets its pace and `speed="0"` freezes it).
+ * A model that moves: one of its animation clips loops — the one named, or else the first —
+ * paced by formula time `t` (so the `speed` attribute sets its pace and `speed="0"` freezes it).
+ * Only one plays: a file's clips are usually one character's moves (idle, walk…), which make no
+ * sense played together.
  *
  * The surface is sampled once — each particle keeps its triangle and its spot on it.
  * Every frame only the clip's transforms are applied (plus the vertices of skinned or
@@ -43,12 +45,22 @@ export class AnimatedModel {
     private readonly fit = new THREE.Matrix4();
     private readonly matrix = new THREE.Matrix4();
     private readonly vertex = new THREE.Vector3();
+    private readonly clip: THREE.AnimationClip;
     private start: number | null = null;
     private posedAt = NaN;
+    /** The names of every animation in the file, in order. */
+    readonly animations: string[];
 
-    constructor(private readonly root: THREE.Object3D, private readonly clip: THREE.AnimationClip) {
+    constructor(private readonly root: THREE.Object3D, clips: THREE.AnimationClip[], animation?: string) {
+        if (clips.length === 0) throw new Error('[NanoSwarm] The model has no animation.');
+        this.animations = clips.map((clip) => clip.name);
+        const named = animation ? clips.find((clip) => clip.name === animation) : undefined;
+        if (animation && !named) {
+            console.warn(`[NanoSwarm] No animation "${animation}" in this model — playing "${clips[0].name}". It has: ${this.animations.join(', ')}.`);
+        }
+        this.clip = named ?? clips[0];
         this.mixer = new THREE.AnimationMixer(root);
-        this.mixer.clipAction(clip).play();
+        this.mixer.clipAction(this.clip).play();
         this.parts = collectParts(root);
         if (this.parts.length === 0) throw new Error('[NanoSwarm] The model contains no meshes.');
         this.frameWholeAnimation();

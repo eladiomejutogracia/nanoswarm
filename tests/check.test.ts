@@ -55,6 +55,8 @@ describe('checkHtml', () => {
         expect(checkHtml('<nano-swarm model="robot.glb">x = 1</nano-swarm>')).toMatchObject({
             ok: true, summary: ['model robot.glb'], warnings: ['the formula is ignored because model is set'],
         });
+        expect(checkHtml('<nano-swarm model="fox.glb" animation="Walk"></nano-swarm>')).toMatchObject({ ok: true, warnings: [] });
+        expect(checkHtml('<nano-swarm animation="Walk">x = u\ny = v\nz = 0</nano-swarm>').warnings).toEqual(['animation is ignored without a model']);
         expect(checkHtml('<nano-swarm></nano-swarm>').warnings).toEqual(['the formula is empty, so the default sphere is shown']);
         expect(checkHtml('<div>hi</div>')).toMatchObject({ ok: false, errors: ['no <nano-swarm>…</nano-swarm> element found'] });
     });

@@ -838,6 +838,7 @@ function bounds(points) {
 var ATTRIBUTES = {
 	title: "A name for this creation",
 	model: "A 3D model file to use instead of a formula (.glb .gltf .obj .stl .ply). Animated .glb/.gltf files move",
+	animation: "Which animation of an animated model to play, by name (default: the first)",
 	colors: "Up to three colors, bottom → top (or c = 0 → 1)",
 	background: "Background color",
 	solid: "Opaque, shaded particles instead of glowing ones",
@@ -984,6 +985,7 @@ function checkMarkup(markup) {
 			}
 		}
 	}
+	if (attr.has("animation") && model === void 0) warnings.push("animation is ignored without a model");
 	if (attr.has("audio") && !listens && errors.length === 0) warnings.push("audio is set, but the formula never reads bass, mid, treble, level or spectrum(k)");
 	return {
 		ok: errors.length === 0,

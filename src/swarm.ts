@@ -172,6 +172,11 @@ export class Swarm {
         }
     }
 
+    /** The names of the current model's animations, in order (empty for formulas and still models). */
+    get animations(): string[] {
+        return this.target?.kind === 'animated' ? this.target.model.animations : [];
+    }
+
     /** Start or replace the audio input. `null` stops it. */
     async setAudio(source: AudioSource): Promise<void> {
         try {

@@ -14,7 +14,8 @@ const ElementBase = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement
  * ATTRIBUTES in ./markup). The canvas lives in a shadow root, so the light
  * DOM — and therefore `outerHTML` — stays exactly what you wrote.
  *
- * Events: `swarm-error` (detail: Error) when a formula, model or audio fails.
+ * Events: `swarm-load` once a formula or model is showing; `swarm-error` (detail: Error)
+ * when a formula, model or audio fails.
  */
 export class NanoSwarmElement extends ElementBase {
     static readonly observedAttributes = ATTRIBUTE_NAMES;
@@ -28,6 +29,7 @@ export class NanoSwarmElement extends ElementBase {
     private readonly stage: HTMLDivElement;
     private observer: MutationObserver | null = null;
     private formulaTimer = 0;
+    private sourceQueued = false;
     private applied: ElementOptions | null = null;
     private waitingForGesture: (() => void) | null = null;
 
@@ -61,7 +63,7 @@ export class NanoSwarmElement extends ElementBase {
             onError: (error) => this.dispatchEvent(new CustomEvent('swarm-error', { detail: error })),
         });
         this.applied = options;
-        this.instance.ready.catch(() => { /* reported through onError */ });
+        this.instance.ready.then(() => this.loaded(), () => { /* reported through onError */ });
         this.syncAudio();
 
         this.observer = new MutationObserver(() => {
@@ -85,10 +87,16 @@ export class NanoSwarmElement extends ElementBase {
         const swarm = this.instance;
         if (!swarm || previous === value) return;
 
-        if (name === 'model') {
-            void this.applySource();
+        if (name === 'model' || (name === 'animation' && this.hasAttribute('model'))) {
+            // Once per task, so setting `model` and then `animation` loads the file once.
+            if (!this.sourceQueued) queueMicrotask(() => {
+                this.sourceQueued = false;
+                void this.applySource();
+            });
+            this.sourceQueued = true;
             return;
         }
+        if (name === 'animation') return;
         if (name === 'audio') {
             this.syncAudio();
             return;
@@ -115,7 +123,7 @@ export class NanoSwarmElement extends ElementBase {
         const model = this.getAttribute('model');
         if (model) {
             const file = this.modelFile && this.modelFile.name === model ? this.modelFile : null;
-            return { model: file ?? model };
+            return { model: file ?? model, animation: this.getAttribute('animation') || undefined };
         }
         return this.formula;
     }
@@ -123,9 +131,14 @@ export class NanoSwarmElement extends ElementBase {
     private async applySource(): Promise<void> {
         try {
             await this.instance?.setSource(this.currentSource());
+            this.loaded();
         } catch {
             /* reported through onError */
         }
+    }
+
+    private loaded(): void {
+        this.dispatchEvent(new CustomEvent('swarm-load'));
     }
 
     /**

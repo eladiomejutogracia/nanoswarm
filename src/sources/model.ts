@@ -79,9 +79,9 @@ async function readBuffer(input: ModelInput): Promise<{ buffer: ArrayBuffer; nam
 
 /**
  * Load a 3D model file: a single geometry ready for sampling, or — for a GLB/GLTF
- * that has an animation — an AnimatedModel that plays its first clip.
+ * that has animations — an AnimatedModel that plays the one named (default: the first).
  */
-export async function loadModel(input: ModelInput, format?: ModelFormat): Promise<THREE.BufferGeometry | AnimatedModel> {
+export async function loadModel(input: ModelInput, format?: ModelFormat, animation?: string): Promise<THREE.BufferGeometry | AnimatedModel> {
     const { buffer, name } = await readBuffer(input);
     const kind = format ?? detectModelFormat(name);
     if (!kind) throw new Error('[NanoSwarm] Unknown model format. Pass { format } or use a .glb/.gltf/.obj/.stl/.ply file.');
@@ -91,10 +91,8 @@ export async function loadModel(input: ModelInput, format?: ModelFormat): Promis
     case 'gltf': {
         const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
         const gltf = await new GLTFLoader().parseAsync(buffer, '');
-        // The first clip: files with several clips are usually one character's moves (idle, walk…),
-        // which make no sense played together.
-        const clip = gltf.animations.find((animation) => animation.duration > 0);
-        return clip ? new AnimatedModel(gltf.scene, clip) : flattenToGeometry(gltf.scene);
+        const clips = gltf.animations.filter((clip) => clip.duration > 0);
+        return clips.length > 0 ? new AnimatedModel(gltf.scene, clips, animation) : flattenToGeometry(gltf.scene);
     }
     case 'obj': {
         const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader.js');

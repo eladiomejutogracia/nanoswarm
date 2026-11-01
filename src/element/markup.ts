@@ -14,6 +14,7 @@ import { LOOK_DEFAULTS, type Look } from '../looks';
 export const ATTRIBUTES = {
     title: 'A name for this creation',
     model: 'A 3D model file to use instead of a formula (.glb .gltf .obj .stl .ply). Animated .glb/.gltf files move',
+    animation: 'Which animation of an animated model to play, by name (default: the first)',
     colors: 'Up to three colors, bottom → top (or c = 0 → 1)',
     background: 'Background color',
     solid: 'Opaque, shaded particles instead of glowing ones',

@@ -11,6 +11,7 @@ import { normalizePoints, resamplePoints } from './params';
  *   'x = cos(u)\ny = sin(u)\nz = 0'   a formula (shape: x, y, z — or motion: dx, dy, dz)
  *   { formula: '...' }                the same, explicitly
  *   { model: 'bunny.glb' }            a 3D model (URL, File, Blob or ArrayBuffer)
+ *   { model: 'fox.glb', animation: 'Walk' }   …playing one of its animations (default: the first)
  *   { points: Float32Array }          your own xyz triplets
  *
  * An empty formula shows DEFAULT_FORMULA.
@@ -18,7 +19,7 @@ import { normalizePoints, resamplePoints } from './params';
 export type Source =
     | string
     | { formula: string }
-    | { model: ModelInput; format?: ModelFormat }
+    | { model: ModelInput; format?: ModelFormat; animation?: string }
     | { points: Float32Array };
 
 /** What an empty <nano-swarm> (or an empty formula) shows: an evenly spread sphere. */
@@ -59,7 +60,7 @@ export async function resolveSource(source: Source): Promise<Target> {
     if ('formula' in source) return formulaTarget(source.formula);
 
     if ('model' in source) {
-        const model = await loadModel(source.model, source.format);
+        const model = await loadModel(source.model, source.format, source.animation);
         if (model instanceof AnimatedModel) return { kind: 'animated', model };
         return pointsTarget((count) => sampleSurface(model, count));
     }

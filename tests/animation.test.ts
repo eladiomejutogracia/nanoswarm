@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { AnimatedModel } from '../src/sources/animation';
 import { FIT_RADIUS } from '../src/sources/params';
@@ -52,7 +52,7 @@ function maxRadius(points: Float32Array): number {
 describe('AnimatedModel', () => {
     it('moves the particles with the clip', () => {
         const { root, clip } = openingCase();
-        const surface = new AnimatedModel(root, clip).sample(2000);
+        const surface = new AnimatedModel(root, [clip]).sample(2000);
         const closed = new Float32Array(2000 * 3);
         const open = new Float32Array(2000 * 3);
         surface.pose(10, closed); // the clip starts the first time it is posed
@@ -62,7 +62,7 @@ describe('AnimatedModel', () => {
 
     it('loops, and does nothing when time stands still (speed 0)', () => {
         const { root, clip } = openingCase();
-        const surface = new AnimatedModel(root, clip).sample(500);
+        const surface = new AnimatedModel(root, [clip]).sample(500);
         const points = new Float32Array(500 * 3);
         surface.pose(0, points);
         surface.pose(0.4, points);
@@ -75,7 +75,7 @@ describe('AnimatedModel', () => {
 
     it('frames the whole animation once: fits the screen at every moment, without jitter', () => {
         const { root, clip } = openingCase();
-        const surface = new AnimatedModel(root, clip).sample(3000);
+        const surface = new AnimatedModel(root, [clip]).sample(3000);
         const points = new Float32Array(3000 * 3);
         let largest = 0;
         for (let t = 0; t < 1; t += 0.05) {
@@ -97,7 +97,7 @@ describe('AnimatedModel', () => {
 
     it('follows morph targets', () => {
         const { root, clip } = morphingPlane();
-        const surface = new AnimatedModel(root, clip).sample(400);
+        const surface = new AnimatedModel(root, [clip]).sample(400);
         const start = new Float32Array(400 * 3);
         const end = new Float32Array(400 * 3);
         surface.pose(0, start);
@@ -107,6 +107,28 @@ describe('AnimatedModel', () => {
         expect(moved).toBe(400);
     });
 
+    it('plays the animation named, or else the first', () => {
+        const { root, clip } = openingCase();
+        const still = new THREE.AnimationClip('still', 1, [
+            new THREE.VectorKeyframeTrack('lid.position', [0, 1], [0, 0.3, 0, 0, 0.3, 0]),
+        ]);
+        const rise = (model: AnimatedModel): number => {
+            const surface = model.sample(1000);
+            const start = new Float32Array(3000);
+            const end = new Float32Array(3000);
+            surface.pose(0, start);
+            surface.pose(0.9, end);
+            return meanY(end) - meanY(start);
+        };
+        expect(new AnimatedModel(root, [still, clip]).animations).toEqual(['still', 'open']);
+        expect(rise(new AnimatedModel(root, [still, clip]))).toBeCloseTo(0, 3);
+        expect(rise(new AnimatedModel(root, [still, clip], 'open'))).toBeGreaterThan(0.5);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        expect(rise(new AnimatedModel(root, [still, clip], 'jump'))).toBeCloseTo(0, 3); // unknown: the first
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('It has: still, open.'));
+        warn.mockRestore();
+    });
+
     it('drives the CPU backend: targets follow the clip', () => {
         const frame = (time: number): FrameInput => ({
             dt: 1 / 60, time, speed: 1, bands: SILENCE, spectrum: new Float32Array(64),
@@ -114,7 +136,7 @@ describe('AnimatedModel', () => {
         });
         const { root, clip } = openingCase();
         const backend = new CpuBackend(1000);
-        backend.setTarget({ kind: 'animated', model: new AnimatedModel(root, clip) });
+        backend.setTarget({ kind: 'animated', model: new AnimatedModel(root, [clip]) });
         const targets = (): Float32Array => (backend as unknown as { targets: Float32Array }).targets;
         backend.update(frame(0));
         const closed = meanY(targets());
