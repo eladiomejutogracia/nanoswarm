@@ -83,7 +83,7 @@ the text is never run directly, so formulas from a shared link are safe.
 | Attribute | |
 |---|---|
 | `title` | A name for the creation |
-| `model="robot.glb"` | Use a 3D model instead of a formula (GLB, GLTF, OBJ, STL, PLY). An animated GLB/GLTF plays its first animation in a loop |
+| `model="robot.glb"` | Use a 3D model instead of a formula (GLB, GLTF, OBJ, STL, PLY): a file next to the page, or a full URL — another site must allow cross-origin requests (CORS), as raw.githubusercontent.com does. An animated GLB/GLTF plays its first animation in a loop |
 | `animation="Walk"` | Which animation of the model to play, by name (default: the first) |
 | `colors="#a #b #c"` | Up to three colors, bottom → top (or `c` = 0 → 1) |
 | `background="#000"` | Background color |
