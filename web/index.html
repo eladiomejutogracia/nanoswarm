@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NanoSwarm</title>
+    <meta name="description" content="Particle swarms shaped by formulas, 3D models and sound — as one HTML element." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='%2300e5ff'%3E%3Ccircle cx='16' cy='6' r='3'/%3E%3Ccircle cx='7' cy='20' r='3'/%3E%3Ccircle cx='25' cy='20' r='3'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='4' fill='%23ff4081'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+    <!-- The page renders this element. Every control below just edits it. -->
+    <nano-swarm id="swarm"></nano-swarm>
+
+    <div class="toolbar">
+        <button id="code-toggle" aria-expanded="false" aria-controls="code-panel">&lt;/&gt; Code</button>
+        <button id="panel-toggle" aria-expanded="true" aria-controls="panel">Hide panel</button>
+    </div>
+
+    <aside id="code-panel" class="code-panel hidden" aria-label="Code">
+        <header class="code-head">
+            <h2>Code</h2>
+            <button id="copy-code" class="primary">Copy</button>
+        </header>
+        <p class="muted">This is the element on this page, as it is right now. Paste it into any HTML page.</p>
+        <pre><code id="code"></code></pre>
+    </aside>
+
+    <aside id="panel" class="panel">
+        <header class="panel-head">
+            <h1>NanoSwarm</h1>
+            <p>Particles shaped by a formula, a 3D model or a song.</p>
+        </header>
+
+        <section>
+            <h2>Examples</h2>
+            <div id="examples" class="chips" role="group" aria-label="Examples"></div>
+        </section>
+
+        <section>
+            <div class="row-head">
+                <h2>Formula</h2>
+                <button id="help-toggle" class="link" aria-expanded="false" aria-controls="help">What can I write?</button>
+            </div>
+            <label class="field">Name <input id="title" type="text" placeholder="Untitled" maxlength="60" /></label>
+            <textarea id="formula" spellcheck="false" autocapitalize="off" autocomplete="off" rows="9" aria-label="Formula" aria-describedby="formula-status"></textarea>
+            <p id="formula-status" class="status" role="status"></p>
+            <label class="slider" title="How fast t runs in shapes, and how fast particles travel in motions">Speed <output id="speed-out"></output>
+                <input id="speed" type="range" min="0" max="3" step="0.05" />
+            </label>
+            <div id="help" class="help" hidden>
+                <p>A formula is a list of lines <code>name = expression</code>. Write one of two kinds:</p>
+                <h3>A shape — where each particle goes</h3>
+                <p>Write <code>x</code>, <code>y</code>, <code>z</code>. You can read:</p>
+                <dl id="help-shape"></dl>
+                <h3>A motion — how a point moves (attractors)</h3>
+                <p>Write <code>dx</code>, <code>dy</code>, <code>dz</code>. Particles keep travelling along it. You can read:</p>
+                <dl id="help-motion"></dl>
+                <h3>In both</h3>
+                <dl>
+                    <dt>c</dt><dd>Optional color, 0 → 1 along the colors. Without it: bottom → top.</dd>
+                    <dt>other names</dt><dd>Helpers you can use in later lines.</dd>
+                    <dt>noise(x, y, z)</dt><dd>Smooth randomness, −1 → 1.</dd>
+                    <dt>spectrum(k)</dt><dd>The music: loudness at frequency <code>k</code>, 0 = bass → 1 = treble.</dd>
+                </dl>
+                <p id="help-functions"></p>
+                <p class="muted">Constants <code>PI TAU E</code> · operators <code>+ - * / ^</code> · comments start with <code>#</code></p>
+            </div>
+            <label class="drop" id="model-drop">
+                <input id="model-input" type="file" accept=".glb,.gltf,.obj,.stl,.ply" hidden />
+                <span>…or drop a 3D model here, or <u>browse</u></span>
+                <small>GLB · GLTF · OBJ · STL · PLY</small>
+            </label>
+        </section>
+
+        <section>
+            <h2>Look</h2>
+            <div id="palettes" class="swatches" role="group" aria-label="Color sets"></div>
+            <div class="colors">
+                <label title="Bottom (c = 0)"><input id="color-0" type="color" /></label>
+                <label title="Middle"><input id="color-1" type="color" /></label>
+                <label title="Top (c = 1)"><input id="color-2" type="color" /></label>
+                <label title="Background" class="bg"><input id="background" type="color" /> background</label>
+            </div>
+            <label class="check"><input id="solid" type="checkbox" /> Solid <small>(opaque, shaded — good for 3D models)</small></label>
+            <label class="check"><input id="bloom" type="checkbox" /> Bloom <small>(GPU only)</small></label>
+        </section>
+
+        <section>
+            <h2>View</h2>
+            <label class="slider">Camera tilt <output id="tilt-out"></output>
+                <input id="tilt" type="range" min="0" max="90" step="1" />
+            </label>
+            <label class="check"><input id="pointer" type="checkbox" /> Pointer pushes particles</label>
+            <label class="check"><input id="rotate" type="checkbox" /> Auto-rotate</label>
+        </section>
+
+        <section>
+            <h2>Sound</h2>
+            <div class="buttons">
+                <button id="play" class="play">▶ Play demo track</button>
+                <button id="mic" aria-pressed="false">Microphone</button>
+                <label class="button">
+                    <input id="audio-input" type="file" accept="audio/*" hidden />Your file…
+                </label>
+            </div>
+            <p id="track" class="status muted"></p>
+            <div class="meters" aria-hidden="true">
+                <div><span>bass</span><i id="m-bass"></i></div>
+                <div><span>mid</span><i id="m-mid"></i></div>
+                <div><span>treble</span><i id="m-treble"></i></div>
+                <div><span>level</span><i id="m-level"></i></div>
+            </div>
+            <label class="slider">Sensitivity <output id="sensitivity-out"></output>
+                <input id="sensitivity" type="range" min="0.3" max="2.5" step="0.1" />
+            </label>
+        </section>
+
+        <section>
+            <h2>Performance</h2>
+            <label class="slider">Particles <output id="particles-out"></output>
+                <input id="particles" type="range" min="0" max="7" step="1" />
+            </label>
+            <div class="segmented" role="group" aria-label="Renderer">
+                <button data-renderer="auto">Auto</button>
+                <button data-renderer="gpu">GPU</button>
+                <button data-renderer="cpu">CPU</button>
+            </div>
+            <p id="info" class="status muted"></p>
+        </section>
+
+        <footer class="panel-foot">
+            <button id="save" class="primary">Save .html</button>
+            <button id="share">Copy link</button>
+        </footer>
+    </aside>
+
+    <div id="toast" class="toast" role="alert" hidden></div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<nano-swarm title="Pulse">
+  # A sphere that breathes with the music
+  h = v / PI - 1
+  ring = sqrt(1 - h*h)
+  R = 3.5 + bass * 1.5 + 0.25 * sin(8*u + 3*t) * (0.3 + treble * 2)
+  x = R * ring * cos(u)
+  y = R * h
+  z = R * ring * sin(u)
+</nano-swarm>

@@ -1,0 +1,11 @@
+<nano-swarm title="Galaxy" colors="#ff3d00 #ff9100 #ffe57f" background="#070201" tilt="40">
+  # r picks one of three arms; v walks outwards along it
+  R = 0.4 + 5 * (v / TAU)^1.5
+  arm = floor(r * 3) * TAU / 3
+  a = arm + 1.2*R - 0.15*t + 0.5*(u/TAU - 0.5)
+  x = R * cos(a)
+  z = R * sin(a)
+  y = 0.25 * sin(3*u) * (1 - R/6)
+  # hot core, cool edges
+  c = 1 - R / 5.5
+</nano-swarm>

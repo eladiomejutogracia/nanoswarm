@@ -1,0 +1,14 @@
+<nano-swarm title="Ring" tilt="24">
+  # 64 bars in a circle, mirrored: bass at the back, treble at the front
+  bar = floor(u / TAU * 64)
+  k = abs(bar - 32) / 32
+  a = (bar + 0.55 * fract(u / TAU * 64)) / 64 * TAU
+  idle = 0.15 * (1 + sin(3*t + 6*k))
+  h = 0.3 + idle + spectrum(k) * 5
+  w = 3.5 + (v / TAU - 0.5) * 0.25
+  x = w * cos(a)
+  z = w * sin(a)
+  y = r * h - 1.5
+  # loud frequencies light up
+  c = 0.15 + spectrum(k) * 0.85
+</nano-swarm>

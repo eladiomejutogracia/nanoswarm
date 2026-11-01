@@ -1,0 +1,51 @@
+{
+  "name": "nanoswarm",
+  "version": "2.0.0-alpha.0",
+  "description": "Particle swarms shaped by formulas, 3D models and sound — as one HTML element.",
+  "type": "module",
+  "module": "dist/nanoswarm.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/nanoswarm.js"
+    },
+    "./element": {
+      "default": "./dist/nano-swarm.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --mode lib && vite build --mode element && tsc -p tsconfig.build.json",
+    "build:web": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "three": ">=0.160.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.171.0",
+    "three": "0.171.0",
+    "typescript": "5.6.3",
+    "vite": "6.4.1",
+    "vitest": "4.1.2"
+  },
+  "keywords": [
+    "particles",
+    "threejs",
+    "webgl",
+    "audio-visualizer",
+    "parametric",
+    "formula"
+  ],
+  "license": "MIT",
+  "unpkg": "dist/nano-swarm.js",
+  "jsdelivr": "dist/nano-swarm.js"
+}

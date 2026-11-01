@@ -1,0 +1,8 @@
+<nano-swarm title="Pin art" colors="#1a237e #4fc3f7 #e0f7fa" background="#02040a" tilt="32">
+  # A disc of pins: the centre plays the bass, the rim the treble
+  d = 6 * sqrt(r)
+  x = d * cos(u)
+  z = d * sin(u)
+  y = spectrum(d / 6) * 3.5 + sin(1.5*d - 2*t) * 0.35 - 1
+  c = 0.3 + y / 4
+</nano-swarm>

@@ -1,0 +1,8 @@
+<nano-swarm title="Lorenz" colors="#1a237e #4fc3f7 #ff4081" background="#02040a">
+  # The Lorenz butterfly, with y as the up axis
+  dx = 10 * (z - x)
+  dz = x * (28 - y) - z
+  dy = x * z - 8/3 * y
+  # fast stretches glow hot
+  c = sqrt(dx*dx + dy*dy + dz*dz) / 180
+</nano-swarm>

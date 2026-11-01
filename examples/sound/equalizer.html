@@ -1,0 +1,13 @@
+<nano-swarm title="Equalizer" colors="#00ff87 #ffe57f #ff3d00" tilt="30">
+  # 12 × 12 bars; frequency rises from one corner to the other
+  cx = floor(u / TAU * 12)
+  cz = floor(v / TAU * 12)
+  k = (cx + cz) / 22
+  idle = 0.1 * (1 + sin(2*t + cx*0.5 + cz*0.3))
+  h = 0.1 + idle + spectrum(k) * 4
+  x = (cx - 5.5) * 0.75 + (fract(u / TAU * 12) - 0.5) * 0.22
+  z = (cz - 5.5) * 0.75 + (fract(v / TAU * 12) - 0.5) * 0.22
+  y = r * h - 2
+  # green at the floor, red at the peaks
+  c = (y + 2) / 3
+</nano-swarm>
