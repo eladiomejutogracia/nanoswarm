@@ -1,7 +1,9 @@
 <nano-swarm title="Thomas" colors="#00ff87 #60efff #0061ff" background="#010608">
   b = 0.208186
-  dx = sin(y) - b * x
-  dy = sin(z) - b * y
-  dz = sin(x) - b * z
+  # with music, the hi-hats push the particles: they rush and flash
+  go = 1 + 1.5 * treble
+  dx = go * (sin(y) - b * x)
+  dy = go * (sin(z) - b * y)
+  dz = go * (sin(x) - b * z)
   c = sqrt(dx*dx + dy*dy + dz*dz) / 1.6
 </nano-swarm>

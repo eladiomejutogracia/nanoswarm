@@ -27,8 +27,9 @@ const el = document.getElementById('swarm') as NanoSwarmElement;
 
 // Served with the playground by GitHub Pages (always the latest main). Switch to the npm CDN once published.
 const SCRIPT_TAG = `<script src="${SCRIPT_URL}"></script>`;
-const DEMO_TRACK = 'audio/lofi-sample.mp3';
-const DEMO_MODEL = { model: 'models/fox.glb', animation: 'Walk' };
+// Full addresses, so the code you copy or save still finds them on any page (both are served with CORS).
+const DEMO_TRACK = new URL('audio/lofi-sample.mp3', document.baseURI).href;
+const DEMO_MODEL = { model: new URL('models/fox.glb', document.baseURI).href, animation: 'Walk' };
 const PARTICLE_STEPS = [5_000, 10_000, 20_000, 30_000, 60_000, 120_000, 180_000, 260_000];
 const FORMULA_DEBOUNCE_MS = 250;
 const WIDE_SCREEN = 1200;
@@ -207,8 +208,8 @@ function renderAudio(): void {
     ui.play.setAttribute('aria-pressed', String(playing));
     ui.mic.setAttribute('aria-pressed', String(audio === 'mic'));
     ui.track.textContent = audio === 'mic' ? 'Listening to the microphone'
-        : isFile ? `${playing ? 'Playing' : 'Paused'}: ${audio}`
-            : 'Shapes that read bass, mid, treble or spectrum(k) react to it.';
+        : isFile ? `${playing ? 'Playing' : 'Paused'}: ${fileName(audio)}`
+            : 'Formulas that read bass, mid, treble or spectrum(k) react to it.';
 }
 
 function renderPerformance(): void {
@@ -348,17 +349,25 @@ ${formatMarkup(markup)}
     link.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'nano-swarm'}.html`;
     link.click();
     URL.revokeObjectURL(link.href);
-    toast(usesLocalModel() ? 'Saved — put the model file next to the page' : 'Saved');
+    const local = localFiles();
+    toast(local ? `Saved — put the ${local} next to the page` : 'Saved');
 }
 
-/** A model picked from this computer: only its name is in the page; a model URL travels with it. */
-const usesLocalModel = () => el.modelFile !== null && el.modelFile.name === attr('model');
+/** Files picked from this computer: only their names are in the code; a URL travels with it. */
+function localFiles(): string | null {
+    const files = [
+        el.modelFile !== null && el.modelFile.name === attr('model') && 'model file',
+        el.audioFile !== null && el.audioFile.name === attr('audio') && 'song',
+    ].filter(Boolean);
+    return files.length ? files.join(' and ') : null;
+}
 
 async function copyLink(): Promise<void> {
     history.replaceState(null, '', `#${encodeShare(readMarkup())}`);
     try {
         await navigator.clipboard.writeText(location.href);
-        toast(usesLocalModel() ? 'Link copied (the model file itself is not included — use a model URL to share it)' : 'Link copied');
+        const local = localFiles();
+        toast(local ? `Link copied (the ${local} is not included — use a URL to share it)` : 'Link copied');
     } catch {
         toast('Copy the link from the address bar');
     }
