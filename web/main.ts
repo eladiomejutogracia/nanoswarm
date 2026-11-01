@@ -60,6 +60,8 @@ const ui = {
     helpMotion: $('help-motion'),
     helpFunctions: $('help-functions'),
     modelInput: $<HTMLInputElement>('model-input'),
+    modelUrlForm: $<HTMLFormElement>('model-url-form'),
+    modelUrl: $<HTMLInputElement>('model-url'),
     tryFox: $<HTMLButtonElement>('try-fox'),
     animationRow: $('animation-row'),
     animation: $<HTMLSelectElement>('animation'),
@@ -155,7 +157,7 @@ function render(): void {
     if (document.activeElement !== ui.title) ui.title.value = attr('title') ?? '';
     const model = attr('model');
     if (model && document.activeElement !== ui.formula) {
-        ui.formula.value = `# Showing the model ${model}\n# Type a formula to go back.`;
+        ui.formula.value = `# Showing the model ${fileName(model)}\n# Type a formula to go back.`;
     }
 
     // Examples: highlight the one whose formula is on screen.
@@ -279,15 +281,18 @@ function onFormulaInput(): void {
     }, FORMULA_DEBOUNCE_MS);
 }
 
+/** "https://…/models/fox.glb?raw=1" → "fox.glb": what a model is called on screen. */
+const fileName = (path: string) => path.replace(/[?#].*$/, '').replace(/^.*\//, '');
+
 /** Show a model: a picked file, or a URL (with one of its animations, if given). */
 function loadModel(source: File | string, animation: string | null = null): void {
     const name = typeof source === 'string' ? source : source.name;
     el.modelFile = typeof source === 'string' ? null : source;
     el.formula = '';
-    setAttr('title', name.replace(/^.*\//, '').replace(/\.[^.]+$/, '')); // the previous creation's name no longer fits
+    setAttr('title', fileName(name).replace(/\.[^.]+$/, '')); // the previous creation's name no longer fits
     setAttr('model', name);
     setAttr('animation', animation);
-    setStatus(`✓ Model: ${name}`, 'ok');
+    setStatus(`✓ Model: ${fileName(name)}`, 'ok');
     if (!el.hasAttribute('solid')) toast('Tip: tick Solid to give models more volume');
 }
 
@@ -343,14 +348,17 @@ ${formatMarkup(markup)}
     link.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'nano-swarm'}.html`;
     link.click();
     URL.revokeObjectURL(link.href);
-    toast(el.hasAttribute('model') ? 'Saved — put the model file next to the page' : 'Saved');
+    toast(usesLocalModel() ? 'Saved — put the model file next to the page' : 'Saved');
 }
+
+/** A model picked from this computer: only its name is in the page; a model URL travels with it. */
+const usesLocalModel = () => el.modelFile !== null && el.modelFile.name === attr('model');
 
 async function copyLink(): Promise<void> {
     history.replaceState(null, '', `#${encodeShare(readMarkup())}`);
     try {
         await navigator.clipboard.writeText(location.href);
-        toast(el.hasAttribute('model') ? 'Link copied (the model file itself is not included)' : 'Link copied');
+        toast(usesLocalModel() ? 'Link copied (the model file itself is not included — use a model URL to share it)' : 'Link copied');
     } catch {
         toast('Copy the link from the address bar');
     }
@@ -473,6 +481,11 @@ function wire(): void {
         const file = ui.modelInput.files?.[0];
         if (file) loadModel(file);
         ui.modelInput.value = '';
+    });
+    ui.modelUrlForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const url = ui.modelUrl.value.trim();
+        if (url) loadModel(url);
     });
     ui.tryFox.addEventListener('click', () => loadModel(DEMO_MODEL.model, DEMO_MODEL.animation));
     ui.animation.addEventListener('change', () => setAttr('animation', ui.animation.value));
