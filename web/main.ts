@@ -23,7 +23,8 @@ import { decodeShare, encodeShare } from './share';
 defineNanoSwarm();
 const el = document.getElementById('swarm') as NanoSwarmElement;
 
-const SCRIPT_TAG = '<script src="https://cdn.jsdelivr.net/npm/nanoswarm@1/dist/nano-swarm.js"></script>';
+// Served with the playground by GitHub Pages (always the latest main). Switch to the npm CDN once published.
+const SCRIPT_TAG = '<script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>';
 const DEMO_TRACK = 'audio/lofi-sample.mp3';
 const PARTICLE_STEPS = [5_000, 10_000, 20_000, 30_000, 60_000, 120_000, 180_000, 260_000];
 const FORMULA_DEBOUNCE_MS = 250;

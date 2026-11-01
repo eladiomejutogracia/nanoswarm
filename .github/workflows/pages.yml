@@ -1,4 +1,5 @@
-# Publishes the playground to GitHub Pages on every push to main.
+# Publishes the playground to GitHub Pages on every push to main, together
+# with the drop-in script (nano-swarm.js) so <nano-swarm> works without npm.
 #
 # GitHub Pages is free for public repositories. While the repository is
 # private this workflow is skipped (no failures); once it is public, enable
@@ -33,7 +34,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run build:web
+      - run: cp dist/nano-swarm.js dist-web/nano-swarm.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

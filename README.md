@@ -3,7 +3,7 @@
 Particle swarms shaped by **formulas**, **3D models** and **sound** — as one HTML element.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nanoswarm@1/dist/nano-swarm.js"></script>
+<script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
 
 <nano-swarm title="Torus" colors="#ff6e7f #bf5af2 #0a84ff" solid>
   R = 3 + 1.2 * cos(v)
@@ -14,6 +14,8 @@ Particle swarms shaped by **formulas**, **3D models** and **sound** — as one H
 ```
 
 The formula is the element's text. Everything else is an attribute. That's the whole idea.
+The script is served from the [playground](https://eladiomejutogracia.github.io/nanoswarm/) site and always
+tracks the latest version; an npm package with pinned versions will come later.
 The script includes three.js; it picks the GPU when the browser can and the CPU when it can't.
 
 The [playground](web/) is a live editor for one of these elements: every control just edits it,
