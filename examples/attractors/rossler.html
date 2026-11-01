@@ -1,0 +1,8 @@
+<nano-swarm title="Rössler" colors="#0d47a1 #26c6da #f4ff81" background="#01040a" tilt="25">
+  # Rössler: a flat spiral that folds up into a spike.
+  # y is the up axis, squashed to 40% so the spike fits the frame
+  dx = -z - 2.5*y
+  dz = x + 0.2 * z
+  dy = 0.08 + y * (x - 5.7)
+  c = (sqrt(dx*dx + dy*dy + dz*dz) - 2) / 10
+</nano-swarm>

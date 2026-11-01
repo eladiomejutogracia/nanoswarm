@@ -1,0 +1,15 @@
+<nano-swarm title="DNA" colors="#00e5ff #ffffff #ff4081" background="#02030a" tilt="10">
+  # Two strands half a turn apart, joined by base pairs
+  h = (v / TAU - 0.5) * 9
+  rung = step(r, 0.35)
+  # base pairs sit at fixed steps; the strands are continuous
+  y = mix(h, floor(h * 2) / 2 + 0.25, rung)
+  a = 0.8 * y + 0.5 * t
+  side = sign(u - PI)
+  s = mix(side, u / PI - 1, rung)
+  tube = 0.14 * (1 - rung)
+  x = 2.2 * s * cos(a) + tube * cos(9*u)
+  z = 2.2 * s * sin(a) + tube * sin(9*u)
+  # one strand cyan, the other pink, pairs blending across
+  c = 0.5 + 0.45 * s
+</nano-swarm>
