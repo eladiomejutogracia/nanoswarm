@@ -40,7 +40,7 @@ jobs:
       - name: Downloadable AI skill (Claude Code + GitHub Copilot)
         run: cd .claude/skills && zip -r ../../dist-web/nanoswarm-skill.zip nanoswarm
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist-web
       - id: deployment
