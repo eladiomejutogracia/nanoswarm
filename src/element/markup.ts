@@ -21,7 +21,7 @@ export const ATTRIBUTES = {
     bloom: 'Glow around bright areas (GPU only). Optionally a strength, e.g. bloom="0.8"',
     speed: 'Pace: 1 normal, 2 twice as fast, 0.5 half',
     tilt: 'Camera height in degrees: 0 side view, 90 top-down',
-    particles: 'How many particles (default: chosen for the device)',
+    particles: 'The most particles to draw (default: chosen for the device; lowered if it runs slow)',
     audio: 'An audio file URL, or "mic". Starts on the first click',
     sensitivity: 'How strongly sound moves things (default 1)',
     renderer: '"gpu" or "cpu" (default: automatic)',
@@ -123,7 +123,7 @@ export interface SwarmMarkup {
     formula: string;
 }
 
-const escapeAttribute = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const escapeAttribute = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escapeText = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const unescape = (v: string) => v
     .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
@@ -154,7 +154,8 @@ export function formatMarkup({ attributes, formula }: SwarmMarkup): string {
     return `<nano-swarm${attrs}>\n${content}\n</nano-swarm>`;
 }
 
-const ELEMENT_RE = /<nano-swarm\b([^>]*)>([\s\S]*?)<\/nano-swarm>/i;
+// A quoted attribute value may contain ">" (title="a > b"), so the opening tag ends at the first ">" outside quotes.
+const ELEMENT_RE = /<nano-swarm\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/nano-swarm>/i;
 const ATTRIBUTE_RE = /([a-z][a-z-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/gi;
 
 /**

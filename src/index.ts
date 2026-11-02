@@ -2,36 +2,23 @@
 //
 // Most people use the <nano-swarm> element (see ./element). This module is the
 // JavaScript API underneath it, for when you want to drive a swarm from code.
+//
+// Everything exported here is the v1 contract (see API.md); tests/api.test.ts
+// pins the list, so widening it is a deliberate change.
 
-export { createSwarm, Swarm, type SwarmOptions, type SwarmInfo } from './swarm';
-export { DEFAULT_VIEW } from './runtime/view';
+// A swarm from code. `Swarm` is a type only: make swarms with createSwarm.
+export { createSwarm, type Swarm, type SwarmOptions, type SwarmInfo } from './swarm';
+export { VERSION } from './version';
+export { DEFAULT_VIEW, type View } from './runtime/view';
 
-// The <nano-swarm> element and its vocabulary
+// The <nano-swarm> element and its attribute vocabulary
 export { NanoSwarmElement, defineNanoSwarm } from './element/element';
-export {
-    ATTRIBUTES,
-    ATTRIBUTE_NAMES,
-    formatMarkup,
-    parseMarkup,
-    readOptions,
-    type AttributeName,
-    type SwarmMarkup,
-} from './element/markup';
+export { ATTRIBUTES, ATTRIBUTE_NAMES, type AttributeName } from './element/markup';
 
-// Sources: a formula or a file
-export { detectSourceKind, FlowError, type Source, type ModelFormat } from './sources';
-
-// Formulas
-export {
-    compileFormula,
-    checkFormula,
-    FormulaError,
-    INPUTS,
-    FUNCTIONS,
-    type CompiledFormula,
-    type FormulaCheck,
-    type FormulaKind,
-} from './formula';
+// Sources, and the errors a bad one raises (swarm-error carries one of these, or a plain Error)
+export type { Source, ModelFormat } from './sources';
+export { FlowError, type FlowErrorCode } from './sources';
+export { FormulaError } from './formula';
 
 // Looks
 export type { Look, LookStyle } from './looks';

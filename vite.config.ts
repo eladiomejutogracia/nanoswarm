@@ -1,13 +1,20 @@
 import { defineConfig } from 'vitest/config';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = import.meta.dirname;
+const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as { version: string };
 
 // `vite` / `vite build`         → the playground web page (web/)
 // `vite build --mode lib`       → dist/nanoswarm.js — ES module, three.js as a peer dependency
 // `vite build --mode element`   → dist/nano-swarm.js — one drop-in <script>, three.js included
 // `vite build --mode check`     → .claude/skills/nanoswarm/check.mjs — the validator, Node only
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode }) => ({
+    define: { __VERSION__: JSON.stringify(version) },
+    ...configFor(mode),
+}));
+
+function configFor(mode: string) {
     if (mode === 'lib') {
         return {
             build: {
@@ -73,4 +80,4 @@ export default defineConfig(({ mode }) => {
             environment: 'node',
         },
     };
-});
+}

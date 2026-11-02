@@ -72,14 +72,12 @@ void main() {
 }
 
 /**
- * Physics passes. Both compute the same velocity from the same inputs, so
- * the position pass integrates with the *new* velocity (semi-implicit Euler).
+ * Physics passes. Both run the same step from the same inputs, so the
+ * position pass integrates with the *new* velocity (semi-implicit Euler).
  * Targets are converted from native to world space (identity unless a motion).
  */
 export function buildPhysicsShader(output: 'velocity' | 'position'): string {
-    const result = output === 'velocity'
-        ? 'vec4(vel, 1.0)'
-        : `vec4(pos + vel * min(uDelta, ${PHYSICS.maxDelta}), 1.0)`;
+    const result = output === 'velocity' ? 'vec4(newVel, 1.0)' : 'vec4(newPos, 1.0)';
     return /* glsl */ `
 uniform sampler2D tParams;
 uniform vec3 uFlowCenter;
@@ -90,7 +88,8 @@ void main() {
     vec3 pos = texture2D(texturePosition, uv).xyz;
     vec3 vel = texture2D(textureVelocity, uv).xyz;
     vec3 target = (texture2D(textureTarget, uv).xyz - uFlowCenter) * uFlowScale;
-    vel = nsStepVelocity(pos, vel, target, texture2D(tParams, uv).z);
+    vec3 newVel, newPos;
+    nsStep(pos, vel, target, texture2D(tParams, uv).z, newVel, newPos);
     gl_FragColor = ${result};
 }
 `;

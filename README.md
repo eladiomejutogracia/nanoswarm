@@ -93,7 +93,7 @@ the text is never run directly, so formulas from a shared link are safe.
 | `tilt="40"` | Camera height in degrees: 0 side view, 90 top-down |
 | `audio="song.mp3"` / `audio="mic"` | Sound to react to — starts on the first click (browser rule) |
 | `sensitivity="1.5"` | How strongly sound moves things |
-| `particles="60000"` | Particle count (default: chosen for the device, lowered if it runs slow) |
+| `particles="60000"` | The most particles to draw: a ceiling, not an order — a slow device still lowers it (default: chosen for the device). The CPU renderer tops out at 40,000 |
 | `renderer="cpu"` | Force `gpu` or `cpu` (default: automatic) |
 | `no-pointer` | The pointer doesn't push particles |
 | `no-rotate` | The camera doesn't orbit on its own |
@@ -142,14 +142,17 @@ swarm.setAudio('mic');
 
 `document.querySelector('nano-swarm').swarm` gives you the same object for an element.
 Events: the element fires `swarm-load` once a formula or model is showing (then `swarm.animations`
-lists the model's animations), and `swarm-error` (`event.detail` is the Error) for a bad formula, model or audio.
+lists the model's animations), and `swarm-error` (`event.detail` is the Error) for a bad formula, model or audio,
+or a browser without WebGL. Failures are also written to the console, so a broken formula never looks like an
+empty element. The full public surface, and what is deliberately left out, is in [API.md](API.md).
 
 ## GPU and CPU
 
 `renderer` defaults to automatic: the GPU (GPGPU float textures; the formula runs once per particle
 per frame in a small target pass) unless the browser lacks float render targets or vertex textures,
 or renders in software. The CPU path uses plain `Float32Array` physics, no bloom, pixel ratio 1 —
-about 2 ms per frame for 200k particles on a model. Both share one physics model, so they look the same.
+capped at 40,000 particles (an animated shape costs about 13 ms per frame at that size on a 2019 laptop;
+the GPU takes hundreds of thousands). Both share one physics model, so they look the same.
 
 ## Develop
 

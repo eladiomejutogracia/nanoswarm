@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { describeAudioError } from '../src/audio/input';
 import { BandSmoother, bandEnergy, rawBands, rawSpectrum, SPECTRUM_BINS, SpectrumSmoother } from '../src/audio/bands';
 
 const SAMPLE_RATE = 48000;
@@ -94,5 +95,30 @@ describe('spectrum', () => {
         expect(out[10]).toBeGreaterThan(0.3);
         expect(out[10]).toBeLessThan(out[0]);
         expect(out[40]).toBe(0);
+    });
+});
+
+describe('F8 · audio errors', () => {
+    const named = (name: string, message = 'browser words') => Object.assign(new Error(message), { name });
+
+    it('say what happened and what to try, in the [NanoSwarm] format', () => {
+        expect(describeAudioError(named('NotAllowedError'), 'mic').message)
+            .toBe('[NanoSwarm] Microphone access was denied. Allow it in the browser, then try again.');
+        expect(describeAudioError(named('NotFoundError'), 'mic').message).toBe('[NanoSwarm] No microphone was found.');
+        expect(describeAudioError(named('NotAllowedError'), 'song.mp3').message).toMatch(/^\[NanoSwarm\] The browser blocked "song\.mp3" from playing/);
+        expect(describeAudioError(named('NotSupportedError'), 'song.mp3').message).toMatch(/^\[NanoSwarm\] Could not load audio "song\.mp3"/);
+    });
+
+    it('never leaves the browser wording alone: unknown errors keep their detail behind the prefix, and the cause', () => {
+        const original = named('WeirdError', 'boom');
+        const described = describeAudioError(original, 'mic');
+        expect(described.message).toMatch(/^\[NanoSwarm\] .*boom/);
+        expect(described.cause).toBe(original);
+        expect(describeAudioError('plain string', 'a.mp3').message).toMatch(/^\[NanoSwarm\] .*plain string/);
+    });
+
+    it('does not prefix twice', () => {
+        const ours = new Error('[NanoSwarm] already said');
+        expect(describeAudioError(ours, 'mic')).toBe(ours);
     });
 });

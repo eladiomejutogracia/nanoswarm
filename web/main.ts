@@ -1,18 +1,7 @@
-import {
-    ATTRIBUTE_NAMES,
-    checkFormula,
-    DEFAULT_VIEW,
-    defineNanoSwarm,
-    detectSourceKind,
-    formatMarkup,
-    FUNCTIONS,
-    INPUTS,
-    parseMarkup,
-    readOptions,
-    type AttributeName,
-    type NanoSwarmElement,
-    type SwarmMarkup,
-} from '../src';
+import { ATTRIBUTE_NAMES, DEFAULT_VIEW, defineNanoSwarm, type AttributeName, type NanoSwarmElement } from '../src';
+import { checkFormula, FUNCTIONS, INPUTS } from '../src/formula';
+import { formatMarkup, parseMarkup, readOptions, type SwarmMarkup } from '../src/element/markup';
+import { detectSourceKind } from '../src/sources';
 import { SCRIPT_URL } from '../src/ai/reference';
 import { checkHtml } from '../src/element/check';
 import { PALETTES } from './palettes';

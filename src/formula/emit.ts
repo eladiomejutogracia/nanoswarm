@@ -12,7 +12,8 @@
  * by the parser, so the user's text never reaches `new Function` or the
  * shader compiler verbatim. Both share the same semantics: GLSL-style `mod`,
  * `fract`, `step`, sign-aware `pow`, integer-hash `noise`, and non-finite
- * results collapse to 0.
+ * results collapse to 0 — judged as float32, so 1e39 (which a float32 can't
+ * hold) collapses to 0 on the CPU exactly as it does on the GPU.
  *
  * Color: if the formula assigns `c`, it is clamped to [0, 1] and picks the
  * particle's color along the palette. Otherwise the color slot is NO_COLOR
@@ -114,7 +115,7 @@ export function toJavaScriptSource(program: Program): string {
         .map((s) => `        const l_${s.name} = ${jsExpr(s.expr)};`)
         .join('\n');
     const color = program.hasColor
-        ? `        if (C !== null) C[i] = l_c === l_c ? (l_c < 0 ? 0 : l_c > 1 ? 1 : l_c) : 0;\n`
+        ? `        if (C !== null) { const c = Math.fround(l_c); C[i] = Number.isFinite(c) ? (c < 0 ? 0 : c > 1 ? 1 : c) : 0; }\n`
         : '';
 
     const motion = program.kind === 'motion';
@@ -130,9 +131,10 @@ return function nsFormula(out, C, params, count, f, P) {
         const i3 = i * 3;
         ${read}
 ${body}
-        out[i3]     = Number.isFinite(${ox}) ? ${ox} : 0;
-        out[i3 + 1] = Number.isFinite(${oy}) ? ${oy} : 0;
-        out[i3 + 2] = Number.isFinite(${oz}) ? ${oz} : 0;
+        const ox = Math.fround(${ox}), oy = Math.fround(${oy}), oz = Math.fround(${oz});
+        out[i3]     = Number.isFinite(ox) ? ox : 0;
+        out[i3 + 1] = Number.isFinite(oy) ? oy : 0;
+        out[i3 + 2] = Number.isFinite(oz) ? oz : 0;
 ${color}    }
 };`;
 }

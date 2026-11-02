@@ -51,8 +51,16 @@ const RUNAWAY = 1e5;
 
 const STILL: FormulaFrame = { t: 0, bass: 0, mid: 0, treble: 0, level: 0, spectrum: new Float32Array(0) };
 
+/**
+ * Why a motion can't be drawn. The set only grows; read `code`, never the message,
+ * to tell failures apart — the wording is free to improve.
+ *   'diverges'  the motion runs off to infinity
+ *   'rests'     the motion settles on a single point
+ */
+export type FlowErrorCode = 'diverges' | 'rests';
+
 export class FlowError extends Error {
-    constructor(message: string) {
+    constructor(readonly code: FlowErrorCode, message: string) {
         super(message);
         this.name = 'FlowError';
     }
@@ -147,7 +155,7 @@ export function calibrateFlow(formula: CompiledFormula, seed = 11): FlowField {
     // recording left the region of the first half" means it is running away —
     // whether the points spread out or all drift off together.
     if (recorded.length === 0 || leftTheRegion(recorded)) {
-        throw new FlowError('This motion runs off to infinity, so particles would fly away. Try smaller numbers, or pull points back (for example "- x").');
+        throw new FlowError('diverges', 'This motion runs off to infinity, so particles would fly away. Try smaller numbers, or pull points back (for example "- x").');
     }
 
     const sample = new Float32Array(recorded);
@@ -158,7 +166,7 @@ export function calibrateFlow(formula: CompiledFormula, seed = 11): FlowField {
     const still = stillTrajectories(sample, weights, owners, n);
     for (let i = 0; i < weights.length; i++) if (still[owners[i]]) weights[i] = 0;
     if (weights.every((w) => w === 0)) {
-        throw new FlowError('This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.');
+        throw new FlowError('rests', 'This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.');
     }
 
     // Robust framing: a stray trajectory (one that took long to fall onto the
@@ -169,7 +177,7 @@ export function calibrateFlow(formula: CompiledFormula, seed = 11): FlowField {
     const center: [number, number, number] = [median(probe, 0), median(probe, 1), median(probe, 2)];
     const radius = percentileDistance(probe, center, 0.95);
     if (radius < 1e-6) {
-        throw new FlowError('This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.');
+        throw new FlowError('rests', 'This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.');
     }
     const scale = FLOW_RADIUS / radius;
 
