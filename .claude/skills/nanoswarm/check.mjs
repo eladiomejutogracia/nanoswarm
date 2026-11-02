@@ -836,7 +836,7 @@ function bounds(points) {
 // src/element/markup.ts
 /** Every attribute the element understands (plus the standard `title`). */
 var ATTRIBUTES = {
-	title: "A name for this creation",
+	title: "A name for this creation; screen readers announce it as the description of the image",
 	model: "A 3D model to use instead of a formula (.glb .gltf .obj .stl .ply): a file path or a URL (another site must allow CORS). Animated .glb/.gltf files move",
 	animation: "Which animation of an animated model to play, by name (default: the first)",
 	colors: "Up to three colors, bottom → top (or c = 0 → 1)",

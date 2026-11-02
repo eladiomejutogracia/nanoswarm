@@ -11,13 +11,16 @@ import { GpuBackend } from './backends/gpu';
 import { chooseBackend, clampParticles, detectCapabilities, type BackendChoice, type BackendPreference } from './backends/select';
 import type { Backend, BackendKind, FrameInput } from './backends/types';
 import { resolveLook, type Look } from './looks';
+import { MotionPreference, StillFrames } from './runtime/motion';
 import { PointerTracker } from './runtime/pointer';
 import { AutoQuality } from './runtime/quality';
 import { DEFAULT_VIEW, FIELD_OF_VIEW, ViewTween, verticalFov } from './runtime/view';
 import { DEFAULT_FORMULA, resolveSource, type Source, type Target } from './sources';
+import { PHYSICS, type PointerState } from './backends/physics';
 
 /** Higher than three's default: on a dark background only dense, bright areas glow. */
 const BLOOM_THRESHOLD = 0.35;
+const NO_POINTER: PointerState = { active: false, x: 0, y: 0, z: 0 };
 
 export interface SwarmOptions {
     /** Formula text, { formula }, { model } or { points }. Default: a sphere. */
@@ -38,7 +41,7 @@ export interface SwarmOptions {
     autoQuality?: boolean;
     /** The pointer pushes particles away. Default: true. */
     interactive?: boolean;
-    /** Slowly orbit the camera. Default: true. */
+    /** Slowly orbit the camera. Default: true (never while the visitor has asked for reduced motion). */
     autoRotate?: boolean;
     /** Audio reactivity multiplier. Default: 1. */
     sensitivity?: number;
@@ -54,6 +57,11 @@ export interface SwarmInfo {
     fps: number;
     /** True if auto quality lowered the particle count. */
     reduced: boolean;
+    /**
+     * True while the visitor's "reduce motion" setting is on: the swarm is a still
+     * picture, drawn again only when something changes. Follows the setting live.
+     */
+    still: boolean;
 }
 
 /** Create a swarm that fills `container`. The canvas follows the container size. */
@@ -73,6 +81,8 @@ export class Swarm {
     private readonly pointer: PointerTracker;
     private readonly viewTween: ViewTween;
     private readonly quality = new AutoQuality();
+    private readonly still = new StillFrames();
+    private readonly motion = new MotionPreference((reduced) => this.onMotionChange(reduced));
     private readonly resizeObserver: ResizeObserver;
     private readonly intersectionObserver: IntersectionObserver;
     private readonly onError?: (error: Error) => void;
@@ -80,6 +90,7 @@ export class Swarm {
     private backendPreference: BackendPreference;
     private autoQuality: boolean;
     private speed: number;
+    private autoRotate: boolean;
     private backend!: Backend;
     private choice!: BackendChoice;
     private look: Look;
@@ -104,6 +115,7 @@ export class Swarm {
         this.backendPreference = options.backend ?? 'auto';
         this.autoQuality = options.autoQuality ?? options.particles === undefined;
         this.speed = options.speed ?? 1;
+        this.autoRotate = options.autoRotate ?? true;
         this.onError = options.onError;
         this.look = resolveLook(options.look);
         this.requestedParticles = options.particles;
@@ -114,6 +126,8 @@ export class Swarm {
         canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
         container.appendChild(canvas);
         this.renderer.debug.onShaderError = () => this.onShaderError();
+        // A restored context comes back blank, and with motion reduced nothing else would redraw it.
+        canvas.addEventListener('webglcontextrestored', () => this.still.resettle());
 
         this.camera.position.setFromSphericalCoords(
             DEFAULT_VIEW.distance,
@@ -125,9 +139,10 @@ export class Swarm {
         this.controls.enablePan = false;
         this.controls.minDistance = 4;
         this.controls.maxDistance = 40;
-        this.controls.autoRotate = options.autoRotate ?? true;
         this.controls.autoRotateSpeed = 0.6;
+        this.applyMotion();
         this.controls.addEventListener('start', () => this.viewTween.cancel()); // the user takes over
+        this.controls.addEventListener('change', () => this.still.invalidate());
 
         this.pointer = new PointerTracker(canvas, this.camera, options.interactive ?? true);
         this.viewTween = new ViewTween(this.camera);
@@ -169,6 +184,7 @@ export class Swarm {
             if (token !== this.sourceToken || this.disposed) return; // a newer source won
             this.target = target;
             this.backend.setTarget(target);
+            this.still.resettle();
         } catch (error) {
             this.report(error);
             throw error;
@@ -218,7 +234,8 @@ export class Swarm {
     }
 
     setAutoRotate(on: boolean): void {
-        this.controls.autoRotate = on;
+        this.autoRotate = on;
+        this.applyMotion();
     }
 
     /** Pace: 1 = normal, 2 = twice as fast, 0.5 = half. */
@@ -229,6 +246,10 @@ export class Swarm {
     /** Glide the camera to this height in degrees above the horizon. */
     setTilt(degrees: number): void {
         this.viewTween.start({ elevation: degrees, distance: this.camera.position.length() });
+        if (this.motion.reduced) {
+            this.viewTween.finish();
+            this.still.invalidate();
+        }
     }
 
     /**
@@ -262,6 +283,7 @@ export class Swarm {
             particles: this.backend.count,
             fps: Math.round(this.fps),
             reduced: this.reduced,
+            still: this.motion.reduced,
         };
     }
 
@@ -285,6 +307,7 @@ export class Swarm {
     dispose(): void {
         this.disposed = true;
         cancelAnimationFrame(this.frameId);
+        this.motion.dispose();
         this.resizeObserver.disconnect();
         this.intersectionObserver.disconnect();
         this.pointer.dispose();
@@ -324,6 +347,24 @@ export class Swarm {
         this.backend.dispose();
         this.buildBackend();
         this.applyLook();
+        this.still.resettle();
+    }
+
+    /** The "reduce motion" setting changed while the page was open. */
+    private onMotionChange(reduced: boolean): void {
+        this.applyMotion();
+        this.quality.reset();
+        if (reduced) {
+            this.viewTween.finish();
+            this.still.resettle();
+        }
+    }
+
+    /** Reduced motion: no orbiting on its own, and no coasting after the visitor lets go of the camera. */
+    private applyMotion(): void {
+        const reduced = this.motion.reduced;
+        this.controls.autoRotate = this.autoRotate && !reduced;
+        this.controls.enableDamping = !reduced;
     }
 
     /** A GPU shader failed to compile (exotic driver, odd formula): switch to CPU once. */
@@ -375,6 +416,7 @@ export class Swarm {
         if (x || y) this.camera.setViewOffset(width, height, -x, -y, width, height);
         else this.camera.clearViewOffset();
         this.camera.updateProjectionMatrix();
+        this.still.invalidate(); // resizing clears the canvas
     }
 
     private render(): void {
@@ -393,6 +435,11 @@ export class Swarm {
             this.backendPreference = 'cpu';
             this.rebuild();
             this.choice = { ...this.choice, reason: 'GPU shader failed to compile' };
+        }
+
+        if (this.motion.reduced) {
+            this.stillFrame(dt);
+            return;
         }
 
         this.fps += (1 / dt - this.fps) * 0.05;
@@ -417,6 +464,22 @@ export class Swarm {
         this.backend.update(frame);
         this.render();
     };
+
+    /**
+     * One frame with motion reduced: time stands still, the swarm settles into
+     * its shape in one go, and the picture is redrawn only when it changed.
+     * Orbiting by hand still works — that movement is the visitor's own.
+     */
+    private stillFrame(dt: number): void {
+        this.audio.update(dt); // keeps `bands` live for anyone reading them; the picture ignores sound
+        this.controls.update(dt);
+        const { steps, paint } = this.still.next();
+        if (steps > 0) {
+            const step = { ...this.frame, dt: PHYSICS.maxDelta, pointer: NO_POINTER };
+            for (let i = 0; i < steps; i++) this.backend.update(step);
+        }
+        if (paint) this.render();
+    }
 
     private report(error: unknown): void {
         this.onError?.(error instanceof Error ? error : new Error(String(error)));

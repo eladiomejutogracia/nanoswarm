@@ -82,7 +82,7 @@ the text is never run directly, so formulas from a shared link are safe.
 
 | Attribute | |
 |---|---|
-| `title` | A name for the creation |
+| `title` | A name for the creation; screen readers announce it as the description of the image |
 | `model="robot.glb"` | Use a 3D model instead of a formula (GLB, GLTF, OBJ, STL, PLY): a file next to the page, or a full URL — another site must allow cross-origin requests (CORS), as raw.githubusercontent.com does. An animated GLB/GLTF plays its first animation in a loop |
 | `animation="Walk"` | Which animation of the model to play, by name (default: the first) |
 | `colors="#a #b #c"` | Up to three colors, bottom → top (or `c` = 0 → 1) |
@@ -100,6 +100,17 @@ the text is never run directly, so formulas from a shared link are safe.
 
 Bad values fall back to defaults instead of breaking the page. Change any attribute at any time and
 the swarm follows — particles fly to new shapes.
+
+### Accessibility
+
+- **Reduced motion.** When the visitor has asked their system for less motion
+  (`prefers-reduced-motion: reduce`), the swarm is a still picture: no particle motion, no camera
+  orbit, no reaction to sound or pointer. It settles into its shape once and is drawn again only when
+  something changes — you can still drag to look around. It follows the setting live, no reload needed.
+  This is on for every shape (formulas, motions, models) and cannot be switched off from the markup.
+- **Screen readers.** The element is an image (`role="img"`) named by its `title`, or "Particle swarm"
+  without one. Write your own `aria-label` to say more, or `aria-hidden="true"` when it is purely
+  decorative (a hero background, say) so screen readers skip it.
 
 ## Examples
 

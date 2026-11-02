@@ -40,7 +40,7 @@ The script includes three.js and picks GPU or CPU rendering by itself.
 
 | | |
 |---|---|
-| `title` | A name for this creation |
+| `title` | A name for this creation; screen readers announce it as the description of the image |
 | `model` | A 3D model to use instead of a formula (.glb .gltf .obj .stl .ply): a file path or a URL (another site must allow CORS). Animated .glb/.gltf files move |
 | `animation` | Which animation of an animated model to play, by name (default: the first) |
 | `colors` | Up to three colors, bottom → top (or c = 0 → 1) |
@@ -57,6 +57,10 @@ The script includes three.js and picks GPU or CPU rendering by itself.
 | `no-rotate` | The camera does not orbit on its own |
 
 Boolean attributes (`solid`, `no-pointer`, `no-rotate`, bare `bloom`) are written without a value.
+
+Accessibility is built in. The element is an image for screen readers, named by `title` (always give it one that
+says what the viewer sees). A purely decorative one, such as a hero background, should say `aria-hidden="true"`.
+When the visitor's system asks for reduced motion, the swarm becomes a still picture; nothing to configure.
 
 ## Formulas
 
