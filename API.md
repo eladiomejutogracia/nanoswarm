@@ -6,6 +6,11 @@ the surface is always a deliberate edit — and this file changes with it.
 
 The element (`<nano-swarm>`, its attributes and events) is documented in the [README](README.md).
 
+A second entry, `import 'nanoswarm/element'`, exports nothing: importing it registers `<nano-swarm>`.
+It is the only file the package marks as having side effects (`sideEffects` in `package.json`), so bundlers
+keep that import and drop everything else you don't use. It shares the code of `nanoswarm` and leaves
+three.js to your app, unlike the drop-in script (`dist/nano-swarm.js`), which carries its own.
+
 ## What is exported
 
 | Export | Kind | Notes |
