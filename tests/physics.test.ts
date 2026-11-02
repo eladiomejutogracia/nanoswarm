@@ -76,3 +76,42 @@ describe('GLSL twin', () => {
         expect(PHYSICS_GLSL).toContain(`${PHYSICS.maxDelta}`);
     });
 });
+
+describe('H1 · no formula can kill a particle for good', () => {
+    // A float32 target the formulas can produce (x = 1e39 collapses to 0 on the way out of the
+    // formula; 3e38 is the biggest finite one, where the velocity step itself overflows float32).
+    it('a target so far away that the step overflows float32 sends the particle back to the target, not to NaN', () => {
+        const { positions, velocities, speeds } = simulate([0, 0, 0], [3e38, 0, 0], { seconds: 1 });
+        expect(Array.from(positions).every(Number.isFinite)).toBe(true);
+        expect(Array.from(velocities).every(Number.isFinite)).toBe(true);
+        expect(Number.isFinite(speeds[0])).toBe(true);
+    });
+
+    it('a NaN or infinite target parks the particle at the origin instead of poisoning it', () => {
+        for (const bad of [NaN, Infinity, -Infinity]) {
+            const { positions, velocities } = simulate([1, 2, 3], [bad, 0, 0], { seconds: 1 });
+            expect(Array.from(positions)).toEqual([0, 0, 0]);
+            expect(Array.from(velocities)).toEqual([0, 0, 0]);
+        }
+    });
+
+    it('recovers once the target is sane again', () => {
+        const positions = new Float32Array([0, 0, 0]);
+        const velocities = new Float32Array(3);
+        const speeds = new Float32Array(1);
+        const rand = new Float32Array([0.5]);
+        const step = (targets: Float32Array, frames: number) => {
+            for (let i = 0; i < frames; i++) stepParticles(positions, velocities, speeds, rand, { dt: 1 / 60, targets, pointer: NO_POINTER });
+        };
+        step(new Float32Array([NaN, 3e38, -3e38]), 30);
+        step(new Float32Array([1, 2, 3]), 240);
+        expect(dist(positions, [1, 2, 3])).toBeLessThan(0.01);
+    });
+
+    it('the GLSL twin applies the same rule: velocity to zero, position to the target or the origin', () => {
+        expect(PHYSICS_GLSL).toContain('bool nsNotFinite(vec3');
+        expect(PHYSICS_GLSL).toContain('void nsStep(');
+        expect(PHYSICS_GLSL).toMatch(/nsNotFinite\(target\) \? vec3\(0\.0\) : target/);
+        expect(PHYSICS_GLSL).toMatch(/vel = vec3\(0\.0\)/);
+    });
+});

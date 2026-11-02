@@ -10,6 +10,34 @@ const SILENT_SPECTRUM = new Float32Array(SPECTRUM_BINS);
  */
 export type AudioSource = 'mic' | (string & {}) | File | Blob | HTMLMediaElement | null;
 
+/**
+ * Browsers word audio failures in their own terms ("Not supported", "Failed to load because no
+ * supported source was found."). Say what happened and what to try, in the same
+ * "[NanoSwarm] …" form the model errors use.
+ */
+export function describeAudioError(error: unknown, label: string): Error {
+    if (error instanceof Error && error.message.startsWith('[NanoSwarm]')) return error;
+    const name = error instanceof Error ? error.name : '';
+    const detail = error instanceof Error && error.message ? error.message : String(error);
+    const mic = label === 'mic';
+    const message = name === 'NotAllowedError' && mic
+        ? 'Microphone access was denied. Allow it in the browser, then try again.'
+        : name === 'NotAllowedError'
+            ? `The browser blocked "${label}" from playing until the visitor clicks or presses a key on the page.`
+            : name === 'NotFoundError' && mic
+                ? 'No microphone was found.'
+                : name === 'NotSupportedError' && !mic
+                    ? `Could not load audio "${label}" (the file is missing, in a format this browser can't play, or on a site that doesn't allow CORS).`
+                    : `Could not start ${mic ? 'the microphone' : `audio "${label}"`} (${detail}).`;
+    return new Error(`[NanoSwarm] ${message}`, { cause: error });
+}
+
+function sourceLabel(source: Exclude<AudioSource, null>): string {
+    if (source === 'mic' || typeof source === 'string') return source;
+    if (typeof HTMLMediaElement !== 'undefined' && source instanceof HTMLMediaElement) return source.currentSrc || source.src || 'the <audio> element';
+    return 'name' in source ? (source as File).name : 'audio file';
+}
+
 /** Owns the Web Audio graph for one swarm. */
 export class AudioInput {
     private context: AudioContext | null = null;
@@ -47,7 +75,15 @@ export class AudioInput {
     async connect(source: AudioSource): Promise<void> {
         this.disconnect();
         if (source === null) return;
+        try {
+            await this.start(source);
+        } catch (error) {
+            this.disconnect(); // don't leave a half-built graph or a stuck <audio> behind
+            throw describeAudioError(error, sourceLabel(source));
+        }
+    }
 
+    private async start(source: Exclude<AudioSource, null>): Promise<void> {
         const context = this.context ?? new AudioContext();
         this.context = context;
         if (context.state === 'suspended') await context.resume();
@@ -57,6 +93,7 @@ export class AudioInput {
         analyser.smoothingTimeConstant = 0.6;
 
         if (source === 'mic') {
+            if (!navigator.mediaDevices) throw new Error('[NanoSwarm] The microphone needs a secure page (https:// or localhost).');
             this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.node = context.createMediaStreamSource(this.stream);
             this.node.connect(analyser); // not to destination: no feedback loop

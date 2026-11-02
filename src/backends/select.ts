@@ -19,9 +19,12 @@ export interface GpuCapabilities {
 
 export const PARTICLE_LIMITS = {
     gpu: { default: 120_000, max: GPU_TEXTURE_SIZE_MAX * GPU_TEXTURE_SIZE_MAX },
-    // CPU cost measured at ~2 ms/frame for 200k static particles on a desktop;
-    // the default stays low for weak machines, the cap matches the GPU.
-    cpu: { default: 30_000, max: GPU_TEXTURE_SIZE_MAX * GPU_TEXTURE_SIZE_MAX },
+    // Measured 2026-11-02 in Chromium 156 on an Intel i7-9750H laptop: median ms per CpuBackend.update()
+    // (formula + physics, no drawing), animated jellyfish / galaxy / lorenz attractor:
+    //   30k: 9.4 / 5.9 / 1.9   40k: 12.8 / 7.3 / 2.6   80k: 24.6 / 14 / 5.4   262k (the old cap): 83 / 48 / 18
+    // The old cap left the jellyfish at ~12 fps before drawing a single point. At 40k the worst case
+    // costs 13 ms, so a 33 ms frame (30 fps) keeps room for drawing and for slower machines.
+    cpu: { default: 30_000, max: 40_000 },
 } as const;
 
 export const MIN_PARTICLES = 500;
@@ -56,6 +59,18 @@ export function clampParticles(kind: BackendKind, requested?: number): number {
     const limits = PARTICLE_LIMITS[kind];
     if (requested === undefined || !Number.isFinite(requested)) return limits.default;
     return Math.round(Math.min(limits.max, Math.max(MIN_PARTICLES, requested)));
+}
+
+/** The renderer, or an Error that says in plain words why there isn't one. */
+export function createRenderer(): THREE.WebGLRenderer {
+    try {
+        return new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    } catch (cause) {
+        throw new Error(
+            '[NanoSwarm] WebGL is not available (it is turned off in this browser, or this device does not support it), so nothing can be drawn.',
+            { cause },
+        );
+    }
 }
 
 const SOFTWARE_RENDERER_RE = /swiftshader|llvmpipe|software|basic render|microsoft basic/i;

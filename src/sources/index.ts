@@ -82,5 +82,5 @@ export function detectSourceKind(file: { name: string; type?: string }): 'model'
     return null;
 }
 
-export { FlowError, type FlowField } from './flow';
+export { FlowError, type FlowErrorCode, type FlowField } from './flow';
 export { detectModelFormat, type ModelFormat, type ModelInput };

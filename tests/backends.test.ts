@@ -43,7 +43,8 @@ describe('clampParticles', () => {
         expect(clampParticles('gpu')).toBe(PARTICLE_LIMITS.gpu.default);
         expect(clampParticles('cpu')).toBe(PARTICLE_LIMITS.cpu.default);
         expect(clampParticles('cpu', 1_000_000)).toBe(PARTICLE_LIMITS.cpu.max);
-        expect(clampParticles('cpu', 200_000)).toBe(200_000);
+        expect(clampParticles('cpu', 30_000)).toBe(30_000);
+        expect(PARTICLE_LIMITS.cpu.max).toBe(40_000); // measured, see select.ts
         expect(clampParticles('gpu', 1_000_000)).toBe(PARTICLE_LIMITS.gpu.max);
         expect(clampParticles('gpu', 3)).toBe(500);
         expect(clampParticles('gpu', NaN)).toBe(PARTICLE_LIMITS.gpu.default);
@@ -166,7 +167,8 @@ describe('GPU compute shaders', () => {
             expect(glsl).not.toContain('nsFormula');
             expect(glsl).not.toContain('nsMotion');
         }
-        expect(buildPhysicsShader('position')).toContain('pos + vel * min(uDelta');
+        expect(buildPhysicsShader('position')).toContain('vec4(newPos, 1.0)');
+        expect(buildPhysicsShader('velocity')).toContain('vec4(newVel, 1.0)');
     });
 
     it('packs xyz into RGBA texels', () => {
@@ -222,5 +224,15 @@ describe('looks', () => {
 
     it('grows points as the particle count drops', () => {
         expect(pointSize(look, 20_000)).toBeGreaterThan(pointSize(look, 200_000));
+    });
+});
+
+describe('F1 · createRenderer', () => {
+    it('turns the browser\'s WebGL failure into a readable [NanoSwarm] error that keeps the cause', async () => {
+        const { createRenderer } = await import('../src/backends/select');
+        let error: Error | undefined;
+        try { createRenderer(); } catch (e) { error = e as Error; }
+        expect(error?.message).toMatch(/^\[NanoSwarm\] WebGL is not available/);
+        expect(error?.cause).toBeDefined();
     });
 });

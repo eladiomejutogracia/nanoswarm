@@ -152,3 +152,23 @@ describe('dedent', () => {
         expect(dedent('\n    a = 1\n      b = 2\n\n    c = 3\n  ')).toBe('a = 1\n  b = 2\n\nc = 3');
     });
 });
+
+describe('H5 · ">" in attributes and formulas', () => {
+    it('a title with ">" survives format → parse', () => {
+        const markup = { attributes: [['title', 'a > b']] as [AttributeName, string][], formula: 'x = u\ny = 0\nz = 0' };
+        const html = formatMarkup(markup);
+        expect(html).toContain('title="a &gt; b"');
+        expect(parseMarkup(html)).toEqual(markup);
+    });
+
+    it('a formula with ">" survives format → parse', () => {
+        const markup = { attributes: [] as [AttributeName, string][], formula: 'x = u > 1 ? 1 : 0\ny = 0\nz = 0' };
+        expect(parseMarkup(formatMarkup(markup))).toEqual(markup);
+    });
+
+    it('a hand-written title="a > b" is read whole, not cut at the first ">"', () => {
+        const parsed = parseMarkup('<nano-swarm title="a > b" solid>\n  x = u\n  y = 0\n  z = 0\n</nano-swarm>');
+        expect(parsed.attributes).toEqual([['title', 'a > b'], ['solid', '']]);
+        expect(parsed.formula).toBe('x = u\ny = 0\nz = 0');
+    });
+});

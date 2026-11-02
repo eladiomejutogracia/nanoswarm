@@ -49,7 +49,7 @@ The script includes three.js and picks GPU or CPU rendering by itself.
 | `bloom` | Glow around bright areas (GPU only). Optionally a strength, e.g. bloom="0.8" |
 | `speed` | Pace: 1 normal, 2 twice as fast, 0.5 half |
 | `tilt` | Camera height in degrees: 0 side view, 90 top-down |
-| `particles` | How many particles (default: chosen for the device) |
+| `particles` | The most particles to draw (default: chosen for the device; lowered if it runs slow) |
 | `audio` | An audio file URL, or "mic". Starts on the first click |
 | `sensitivity` | How strongly sound moves things (default 1) |
 | `renderer` | "gpu" or "cpu" (default: automatic) |
