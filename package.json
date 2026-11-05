@@ -41,6 +41,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
     "test:watch": "vitest",
     "build:check": "vite build --mode check",
     "check": "node .claude/skills/nanoswarm/check.mjs",
@@ -52,6 +53,8 @@
   "devDependencies": {
     "@types/node": "26.6.6",
     "@types/three": "0.187.0",
+    "@vitest/browser-playwright": "5.0.5",
+    "playwright": "1.64.1",
     "three": "0.187.0",
     "typescript": "7.0.2",
     "vite": "8.3.5",
