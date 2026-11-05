@@ -8,6 +8,10 @@
  *
  * `PHYSICS_GLSL` below is the exact same math for the GPU backend —
  * change one, change the other (tests/physics.test.ts guards the JS side).
+ *
+ * A particle whose position or velocity stops being a finite float32 (a
+ * target at 1e38 overflows the spring, say) goes back to its target at rest,
+ * so no formula can lose particles for good.
  */
 export const PHYSICS = {
     stiffness: 18,
@@ -34,6 +38,8 @@ export interface StepInput {
     targets: Float32Array;
     pointer: PointerState;
 }
+
+const finiteOrZero = (x: number) => (Number.isFinite(x) ? x : 0);
 
 /** Advance positions and velocities in place. `speeds` receives |velocity| for coloring. */
 export function stepParticles(
@@ -77,16 +83,27 @@ export function stepParticles(
             }
         }
 
-        vx *= keep;
-        vy *= keep;
-        vz *= keep;
+        // Math.fround: judge the numbers as the Float32Arrays will store them.
+        vx = Math.fround(vx * keep);
+        vy = Math.fround(vy * keep);
+        vz = Math.fround(vz * keep);
+        let nx = Math.fround(px + vx * h);
+        let ny = Math.fround(py + vy * h);
+        let nz = Math.fround(pz + vz * h);
+
+        if (!Number.isFinite(vx + vy + vz + nx + ny + nz)) {
+            vx = vy = vz = 0;
+            nx = finiteOrZero(targets[i3]);
+            ny = finiteOrZero(targets[i3 + 1]);
+            nz = finiteOrZero(targets[i3 + 2]);
+        }
 
         velocities[i3] = vx;
         velocities[i3 + 1] = vy;
         velocities[i3 + 2] = vz;
-        positions[i3] = px + vx * h;
-        positions[i3 + 1] = py + vy * h;
-        positions[i3 + 2] = pz + vz * h;
+        positions[i3] = nx;
+        positions[i3 + 1] = ny;
+        positions[i3 + 2] = nz;
         speeds[i] = Math.sqrt(vx * vx + vy * vy + vz * vz);
     }
 }
@@ -94,14 +111,18 @@ export function stepParticles(
 const f = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${n}`);
 
 /**
- * GLSL twin of stepParticles for one particle. Returns the new velocity;
- * the caller integrates `pos + vel * h`.
+ * GLSL twin of stepParticles for one particle: the new velocity and position.
+ * Both physics passes call it with the same inputs, so they always agree.
  */
 export const PHYSICS_GLSL = /* glsl */ `
 uniform float uDelta;
 uniform vec4  uPointer; // xyz + active flag
 
-vec3 nsStepVelocity(vec3 pos, vec3 vel, vec3 target, float r) {
+// Checks the exponent bits: fast-math compilers may delete isnan/isinf calls.
+bool nsNotFinite(float x) { return (floatBitsToUint(x) & 0x7f800000u) == 0x7f800000u; }
+bool nsNotFinite(vec3 v) { return nsNotFinite(v.x) || nsNotFinite(v.y) || nsNotFinite(v.z); }
+
+void nsStep(vec3 pos, vec3 vel, vec3 target, float r, out vec3 newVel, out vec3 newPos) {
     float h = min(uDelta, ${f(PHYSICS.maxDelta)});
     vec3 d = target - pos;
     float k = ${f(PHYSICS.stiffness)} * (${f(PHYSICS.spreadMin)} + ${f(PHYSICS.spreadRange)} * r) * h;
@@ -118,6 +139,13 @@ vec3 nsStepVelocity(vec3 pos, vec3 vel, vec3 target, float r) {
         }
     }
 
-    return vel * exp(${f(-PHYSICS.damping)} * h);
+    vel *= exp(${f(-PHYSICS.damping)} * h);
+    vec3 next = pos + vel * h;
+    if (nsNotFinite(vel) || nsNotFinite(next)) {
+        vel = vec3(0.0);
+        next = nsNotFinite(target) ? vec3(0.0) : target;
+    }
+    newVel = vel;
+    newPos = next;
 }
 `;

@@ -30,8 +30,8 @@ jobs:
       - run: npm run build:web
       - name: The AI skill's files are up to date (run `npm run build:check` and `npx vitest -u`)
         run: git diff --exit-code -- .claude/skills web/public/llms.txt
-      - name: Every example passes the checker
-        run: npm run check -- examples
+      - name: Every example — and the page the header image shows — passes the checker
+        run: npm run check -- examples web/public/preview.html
 
   # Pull requests only: stops new dependencies that have known vulnerabilities.
   dependencies:

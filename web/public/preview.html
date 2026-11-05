@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Galaxy</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #03040a } nano-swarm { height: 100vh }</style>
+</head>
+<body>
+<nano-swarm colors="#ff3d00 #ff9100 #ffe57f" tilt="40">
+  R = 4.5 * (v / TAU)^1.5
+  a = 1.2*R - 0.2*t + floor(r*3) * TAU/3
+  x = R * cos(a)
+  y = 0.3 * sin(3*u)
+  z = R * sin(a)
+</nano-swarm>
+</body>
+</html>

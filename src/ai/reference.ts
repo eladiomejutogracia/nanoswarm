@@ -7,7 +7,7 @@
  *   .claude/skills/nanoswarm/SKILL.md   an Agent Skill read by Claude Code and GitHub Copilot
  *   web/public/llms.txt                 the same reference for any assistant, served with the playground
  */
-import { ATTRIBUTES } from '../element/markup';
+import { ATTRIBUTES, extractElement, parseMarkup } from '../element/markup';
 import { CONSTANTS, FUNCTIONS, INPUTS } from '../formula/parse';
 
 export const SITE_URL = 'https://eladiomejutogracia.github.io/nanoswarm/';
@@ -16,6 +16,7 @@ export const SCRIPT_URL = `${SITE_URL}nano-swarm.js`;
 export interface ExampleFile {
     /** Folder in examples/: sound, shapes or attractors. */
     group: string;
+    /** The whole example page; only its <nano-swarm> is shown here. */
     html: string;
 }
 
@@ -42,9 +43,7 @@ function inputRows(inputs: Record<string, string>): [string, string][] {
     return rows.map(([names, description]) => [names.map((n) => `\`${n}\``).join(', '), description]);
 }
 
-function titleOf(html: string): string {
-    return /title="([^"]*)"/.exec(html)?.[1] ?? '';
-}
+const titleOf = (html: string) => parseMarkup(html).attributes.find(([name]) => name === 'title')?.[1] ?? '';
 
 /** The reference: page setup, attributes, formula language, rules, examples. */
 export function buildReference(examples: ExampleFile[]): string {
@@ -113,7 +112,7 @@ never add a time step. A motion that runs off to infinity, or settles on a singl
 
 ## Examples
 
-${showcase.map((e) => `### ${titleOf(e.html)} (${e.group})\n\n\`\`\`html\n${e.html.trim()}\n\`\`\``).join('\n\n')}
+${showcase.map((e) => `### ${titleOf(e.html)} (${e.group})\n\n\`\`\`html\n${extractElement(e.html)}\n\`\`\``).join('\n\n')}
 
 More in the repository's \`examples/\` folder and in the playground's gallery: ${SITE_URL}
 `;

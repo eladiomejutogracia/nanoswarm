@@ -1,3 +1,13 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Equalizer</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #03040a } nano-swarm { height: 100vh }</style>
+</head>
+<body>
 <nano-swarm title="Equalizer" colors="#00ff87 #ffe57f #ff3d00" tilt="30">
   # 12 × 12 bars; frequency rises from one corner to the other
   cx = floor(u / TAU * 12)
@@ -11,3 +21,5 @@
   # green at the floor, red at the peaks
   c = (y + 2) / 3
 </nano-swarm>
+</body>
+</html>

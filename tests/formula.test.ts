@@ -308,3 +308,29 @@ describe('motion formulas (dx, dy, dz)', () => {
         expect(() => compileFormula('dx = 0\ndy = 0\ndz = 0\nk = 1\nr = 2')).toThrow('built-in input');
     });
 });
+
+describe('H1 · values float32 cannot hold', () => {
+    it('x = 1e39 collapses to 0, as it does on the GPU, instead of staying a huge double', () => {
+        expect(run(xyz('1e39', '-1e39', '1e300'))).toEqual([0, 0, 0]);
+    });
+
+    it('a motion that overflows float32 stops (0) rather than flinging the particle away', () => {
+        const f = compileFormula('dx = 1e39\ndy = 1\ndz = -1e39');
+        const out = new Float32Array(3);
+        f.evaluate(out, null, new Float32Array(3), 1, { t: 0, bass: 0, mid: 0, treble: 0, level: 0, spectrum: new Float32Array(64) }, new Float32Array(3));
+        expect(Array.from(out)).toEqual([0, 1, 0]);
+    });
+
+    it('a color that overflows or is NaN is 0, matching clamp(nsFinite(c), 0, 1) in GLSL', () => {
+        const f = compileFormula('x = u\ny = 0\nz = 0\nc = 1e39');
+        const out = new Float32Array(3);
+        const colors = new Float32Array(1);
+        f.evaluate(out, colors, new Float32Array(3), 1, { t: 0, bass: 0, mid: 0, treble: 0, level: 0, spectrum: new Float32Array(64) });
+        expect(colors[0]).toBe(0);
+    });
+
+    it('ordinary values are untouched', () => {
+        expect(run(xyz('1e30', '-2.5', '0.125'))[0]).toBe(Math.fround(1e30));
+        expect(run(xyz('1e30', '-2.5', '0.125')).slice(1)).toEqual([-2.5, 0.125]);
+    });
+});

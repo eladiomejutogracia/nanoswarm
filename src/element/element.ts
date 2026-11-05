@@ -1,3 +1,5 @@
+import { FormulaError } from '../formula';
+import { FlowError } from '../sources';
 import { Swarm } from '../swarm';
 import { ATTRIBUTE_NAMES, accessibleName, readOptions, type AttributeName, type ElementOptions } from './markup';
 
@@ -19,7 +21,8 @@ const ElementBase = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement
  * purely decorative one win). With "reduce motion" on it is a still picture.
  *
  * Events: `swarm-load` once a formula or model is showing; `swarm-error` (detail: Error)
- * when a formula, model or audio fails.
+ * when a formula, model or audio fails, or when the browser has no WebGL. Every
+ * error is also written to the console, so a broken formula never looks like an empty element.
  */
 export class NanoSwarmElement extends ElementBase {
     static readonly observedAttributes = ATTRIBUTE_NAMES;
@@ -35,6 +38,8 @@ export class NanoSwarmElement extends ElementBase {
     private observer: MutationObserver | null = null;
     private formulaTimer = 0;
     private sourceQueued = false;
+    private sourceToken = 0;
+    private waitingForParser: (() => void) | null = null;
     private applied: ElementOptions | null = null;
     private waitingForGesture: (() => void) | null = null;
 
@@ -66,13 +71,33 @@ export class NanoSwarmElement extends ElementBase {
     connectedCallback(): void {
         if (this.instance) return;
         const options = this.readAttributes();
-        this.instance = new Swarm(this.stage, {
-            ...options,
-            source: this.currentSource(),
-            onError: (error) => this.dispatchEvent(new CustomEvent('swarm-error', { detail: error })),
-        });
+        const token = ++this.sourceToken;
+        try {
+            this.instance = new Swarm(this.stage, {
+                ...options,
+                source: this.currentSource(),
+                onError: (error) => this.fail(error),
+            });
+        } catch (error) {
+            // No WebGL: same channel as every other failure, and never an exception out of the browser's callback.
+            queueMicrotask(() => this.fail(error));
+            return;
+        }
         this.applied = options;
-        this.instance.ready.then(() => this.loaded(), () => { /* reported through onError */ });
+
+        // The HTML parser creates the element before its text exists. An empty element that is still
+        // being parsed isn't "empty": wait for its formula instead of announcing the default sphere.
+        if (document.readyState === 'loading' && !this.hasAttribute('model') && this.formula.trim() === '') {
+            const onParsed = () => {
+                this.waitingForParser = null;
+                clearTimeout(this.formulaTimer);
+                if (token === this.sourceToken) void this.applySource();
+            };
+            document.addEventListener('DOMContentLoaded', onParsed, { once: true });
+            this.waitingForParser = () => document.removeEventListener('DOMContentLoaded', onParsed);
+        } else {
+            this.instance.ready.then(() => token === this.sourceToken && this.loaded(), () => { /* reported through onError */ });
+        }
         this.syncAudio();
 
         this.observer = new MutationObserver(() => {
@@ -87,6 +112,9 @@ export class NanoSwarmElement extends ElementBase {
         this.observer?.disconnect();
         this.observer = null;
         this.cancelGestureWait();
+        this.waitingForParser?.();
+        this.waitingForParser = null;
+        clearTimeout(this.formulaTimer);
         this.instance?.dispose();
         this.instance = null;
         this.applied = null;
@@ -120,7 +148,7 @@ export class NanoSwarmElement extends ElementBase {
         if (JSON.stringify(next.look) !== JSON.stringify(prev.look)) swarm.setLook(next.look);
         if (next.speed !== prev.speed) swarm.setSpeed(next.speed);
         if (next.tilt !== prev.tilt && next.tilt !== undefined) swarm.setTilt(next.tilt);
-        if (next.particles !== prev.particles && next.particles !== undefined) swarm.setParticles(next.particles);
+        if (next.particles !== prev.particles) swarm.setParticles(next.particles);
         if (next.backend !== prev.backend) swarm.setBackend(next.backend);
         if (next.sensitivity !== prev.sensitivity) swarm.setSensitivity(next.sensitivity);
         if (next.interactive !== prev.interactive) swarm.setInteractive(next.interactive);
@@ -146,16 +174,32 @@ export class NanoSwarmElement extends ElementBase {
     }
 
     private async applySource(): Promise<void> {
+        const swarm = this.instance;
+        if (!swarm) return;
+        const token = ++this.sourceToken;
+        this.waitingForParser?.();
+        this.waitingForParser = null;
         try {
-            await this.instance?.setSource(this.currentSource());
-            this.loaded();
-        } catch {
-            /* reported through onError */
+            await swarm.setSource(this.currentSource());
+        } catch (error) {
+            if (token === this.sourceToken) this.fail(error); // an older source failing is no longer news
+            return;
         }
+        if (token === this.sourceToken) this.loaded();
     }
 
     private loaded(): void {
         this.dispatchEvent(new CustomEvent('swarm-load'));
+    }
+
+    /** The one place errors leave the element: the `swarm-error` event, and the console. */
+    private fail(error: unknown): void {
+        const failure = error instanceof Error ? error : new Error(String(error));
+        const text = failure instanceof FormulaError || failure instanceof FlowError
+            ? `[NanoSwarm] This formula can't be drawn. ${failure.message}`
+            : failure.message.startsWith('[NanoSwarm]') ? failure.message : `[NanoSwarm] ${failure.message}`;
+        console.warn(text, this);
+        this.dispatchEvent(new CustomEvent('swarm-error', { detail: failure }));
     }
 
     /**
@@ -168,11 +212,11 @@ export class NanoSwarmElement extends ElementBase {
         this.cancelGestureWait();
         const audio = this.getAttribute('audio');
         if (!audio) {
-            void swarm.setAudio(null).catch(() => {});
+            swarm.setAudio(null).catch((error) => this.fail(error));
             return;
         }
         const source = this.audioFile && this.audioFile.name === audio ? this.audioFile : audio;
-        const start = () => void swarm.setAudio(source).catch(() => {});
+        const start = () => swarm.setAudio(source).catch((error) => this.fail(error));
         const activated = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive;
         if (activated) {
             start();

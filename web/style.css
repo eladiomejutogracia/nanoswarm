@@ -116,6 +116,7 @@ h2, h3, .group-label, .field > span, .slider > span, .meters span, .colors .bg, 
 
 button, .button {
     display: inline-flex;
+    text-decoration: none;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -140,10 +141,10 @@ button.primary { color: var(--page); background: var(--text-display); border-col
 button.primary:hover:not(:disabled) { color: var(--page); background: var(--text-primary); border-color: var(--text-primary); }
 
 /* Ghost buttons in the top bar read as bracketed commands: [ CODE ]. */
-button.ghost { gap: 0; padding: 0 12px; border-color: transparent; color: var(--text-secondary); }
-button.ghost::before { content: '[ '; white-space: pre; }
-button.ghost::after { content: ' ]'; white-space: pre; }
-button.ghost:hover:not(:disabled), button.ghost[aria-expanded='true'] { color: var(--text-display); border-color: transparent; }
+.ghost { gap: 0; padding: 0 12px; border-color: transparent; color: var(--text-secondary); }
+.ghost::before { content: '[ '; white-space: pre; }
+.ghost::after { content: ' ]'; white-space: pre; }
+.ghost:hover:not(:disabled), .ghost[aria-expanded='true'] { color: var(--text-display); border-color: transparent; }
 
 button.link {
     min-height: 0;
@@ -212,6 +213,15 @@ button[aria-pressed='true']::before {
     border-top: 1px solid var(--border);
 }
 .panel-foot .primary { flex: 1; }
+
+/* ─── Take it with you ──────────────────────────────────── */
+/* Links out: the code, the docs, the licence, and the credits the demo assets require. */
+
+.panel a { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
+.panel a:hover { color: var(--text-display); }
+.links { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.credits { margin: 20px 0 0; font-size: 12px; line-height: 1.7; }
+.credits a { color: inherit; }
 
 /* ─── Examples ──────────────────────────────────────────── */
 
@@ -504,8 +514,10 @@ input[type='color']::-moz-color-swatch { border: none; border-radius: 2px; }
     .topbar { padding: 0 12px 0 16px; }
     .brand h1 { font-size: 24px; }
     .toolbar { gap: 0; }
-    button.ghost { padding: 0 6px; }
-    button.ghost::before, button.ghost::after { content: none; }
+    .ghost { padding: 0 6px; }
+    .ghost::before, .ghost::after { content: none; }
+    /* Four items no longer fit next to the wordmark; "Source on GitHub" is in the panel. */
+    .topbar a.ghost { display: none; }
 
     .panel, .code-panel {
         top: auto;

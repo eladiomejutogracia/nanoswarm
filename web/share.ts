@@ -3,7 +3,7 @@
  * Decoding never trusts it: it goes through parseMarkup, which keeps only
  * the documented attributes, and the formula still goes through the parser.
  */
-import { formatMarkup, parseMarkup, type SwarmMarkup } from '../src';
+import { formatMarkup, parseMarkup, type SwarmMarkup } from '../src/element/markup';
 
 const KEY = 'swarm';
 const MAX_LENGTH = 8000;

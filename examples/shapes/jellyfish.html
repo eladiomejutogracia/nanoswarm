@@ -1,3 +1,13 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jellyfish</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #03010a } nano-swarm { height: 100vh }</style>
+</head>
+<body>
 <nano-swarm title="Jellyfish" colors="#2a0845 #ff4fd8 #a0f0ff" background="#03010a" tilt="12">
   # r splits the particles: 60% bell, 40% tentacles
   bell = step(r, 0.6)
@@ -18,3 +28,5 @@
   # bright dome, tentacles fading out
   c = mix(0.75 - 0.6*h, 1 - 0.5*h, bell)
 </nano-swarm>
+</body>
+</html>

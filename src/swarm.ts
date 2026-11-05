@@ -8,7 +8,7 @@ import { AudioInput, type AudioSource } from './audio/input';
 import type { AudioBands } from './audio/bands';
 import { CpuBackend } from './backends/cpu';
 import { GpuBackend } from './backends/gpu';
-import { chooseBackend, clampParticles, detectCapabilities, type BackendChoice, type BackendPreference } from './backends/select';
+import { chooseBackend, clampParticles, createRenderer, detectCapabilities, type BackendChoice, type BackendPreference } from './backends/select';
 import type { Backend, BackendKind, FrameInput } from './backends/types';
 import { resolveLook, type Look } from './looks';
 import { MotionPreference, StillFrames } from './runtime/motion';
@@ -33,11 +33,15 @@ export interface SwarmOptions {
     speed?: number;
     /** Camera height in degrees above the horizon (0 = side view, 90 = top-down). Default: 11. */
     tilt?: number;
-    /** Particle count. Clamped to what the chosen backend handles. */
+    /**
+     * Particle count you want: a ceiling, not an order. It is clamped to what the chosen backend
+     * handles, and with `autoQuality` on (the default) it is still lowered if the device can't keep 30 fps.
+     * Leave it out for a count chosen for the device.
+     */
     particles?: number;
     /** 'auto' picks GPU when the browser can do GPGPU, CPU otherwise. */
     backend?: BackendPreference;
-    /** Lower the particle count if the frame rate stays below 30 fps. Default: true unless `particles` is set. */
+    /** Lower the particle count if the frame rate stays below 30 fps (it never raises it again). Default: true. Set false to hold `particles` exactly. */
     autoQuality?: boolean;
     /** The pointer pushes particles away. Default: true. */
     interactive?: boolean;
@@ -45,7 +49,11 @@ export interface SwarmOptions {
     autoRotate?: boolean;
     /** Audio reactivity multiplier. Default: 1. */
     sensitivity?: number;
-    /** Called when something fails after creation (bad model URL, mic denied…). */
+    /**
+     * Called when the `source` or `audio` you passed here fails (bad formula, 404 model, mic denied…) —
+     * nothing else holds a promise for those. Calls you make later (`setSource`, `setAudio`) report
+     * through the promise they return and never reach `onError`. Without `onError`, failures go to `console.warn`.
+     */
     onError?: (error: Error) => void;
 }
 
@@ -64,13 +72,20 @@ export interface SwarmInfo {
     still: boolean;
 }
 
-/** Create a swarm that fills `container`. The canvas follows the container size. */
+/**
+ * Create a swarm that fills `container`. The canvas follows the container size.
+ * Throws an Error (message starting "[NanoSwarm]") if the browser can't give it a WebGL context.
+ */
 export function createSwarm(container: HTMLElement, options: SwarmOptions = {}): Swarm {
     return new Swarm(container, options);
 }
 
+/** What `createSwarm` returns. Create swarms with `createSwarm`, not `new`. */
 export class Swarm {
-    /** Resolves once the initial source is loaded (models load asynchronously). */
+    /**
+     * Resolves once the initial source is showing (models load asynchronously). Rejects with the same
+     * error `onError` receives if it fails; it is marked handled, so ignoring it never logs an unhandled rejection.
+     */
     readonly ready: Promise<void>;
 
     private readonly renderer: THREE.WebGLRenderer;
@@ -103,17 +118,15 @@ export class Swarm {
     private frameId = 0;
     private lastTime = 0;
     private fps = 60;
-    private running = true;
     private visible = true;
     private pendingFallback = false;
     private disposed = false;
-    private centerOffset = { x: 0, y: 0 };
     /** Reused every frame — the render loop allocates nothing. */
     private readonly frame: FrameInput;
 
     constructor(private readonly container: HTMLElement, options: SwarmOptions) {
         this.backendPreference = options.backend ?? 'auto';
-        this.autoQuality = options.autoQuality ?? options.particles === undefined;
+        this.autoQuality = options.autoQuality ?? true;
         this.speed = options.speed ?? 1;
         this.autoRotate = options.autoRotate ?? true;
         this.onError = options.onError;
@@ -121,7 +134,7 @@ export class Swarm {
         this.requestedParticles = options.particles;
         this.audio.sensitivity = options.sensitivity ?? 1;
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+        this.renderer = createRenderer();
         const canvas = this.renderer.domElement;
         canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
         container.appendChild(canvas);
@@ -168,7 +181,8 @@ export class Swarm {
         this.resize();
 
         this.ready = this.setSource(options.source ?? DEFAULT_FORMULA);
-        if (options.audio) void this.setAudio(options.audio);
+        this.ready.catch((error) => this.report(error));
+        if (options.audio) this.setAudio(options.audio).catch((error) => this.report(error));
 
         this.lastTime = performance.now();
         this.frameId = requestAnimationFrame(this.tick);
@@ -176,19 +190,17 @@ export class Swarm {
 
     // ─── Public API ─────────────────────────────────────────────────
 
-    /** Change what the swarm forms. Particles fly from their current shape. */
+    /**
+     * Change what the swarm forms. Particles fly from their current shape.
+     * Rejects if the source can't be shown (the swarm keeps what it was showing).
+     */
     async setSource(source: Source): Promise<void> {
         const token = ++this.sourceToken;
-        try {
-            const target = await resolveSource(source);
-            if (token !== this.sourceToken || this.disposed) return; // a newer source won
-            this.target = target;
-            this.backend.setTarget(target);
-            this.still.resettle();
-        } catch (error) {
-            this.report(error);
-            throw error;
-        }
+        const target = await resolveSource(source);
+        if (token !== this.sourceToken || this.disposed) return; // a newer source won
+        this.target = target;
+        this.backend.setTarget(target);
+        this.still.resettle();
     }
 
     /** The names of the current model's animations, in order (empty for formulas and still models). */
@@ -196,14 +208,9 @@ export class Swarm {
         return this.target?.kind === 'animated' ? this.target.model.animations : [];
     }
 
-    /** Start or replace the audio input. `null` stops it. */
-    async setAudio(source: AudioSource): Promise<void> {
-        try {
-            await this.audio.connect(source);
-        } catch (error) {
-            this.report(error);
-            throw error;
-        }
+    /** Start or replace the audio input. `null` stops it. Rejects if the sound can't start. */
+    setAudio(source: AudioSource): Promise<void> {
+        return this.audio.connect(source);
     }
 
     setLook(look: Partial<Look>): void {
@@ -211,10 +218,12 @@ export class Swarm {
         this.applyLook();
     }
 
-    /** Set the particle count explicitly. This also turns auto quality off — you decided. */
-    setParticles(count: number): void {
+    /**
+     * Change the particle count you want (see `SwarmOptions.particles`); `undefined` goes back to the
+     * count chosen for the device. Auto quality keeps working: it may lower this count again.
+     */
+    setParticles(count?: number): void {
         this.requestedParticles = count;
-        this.autoQuality = false;
         this.reduced = false;
         if (clampParticles(this.choice.kind, count) !== this.backend.count) this.rebuild();
     }
@@ -252,15 +261,6 @@ export class Swarm {
         }
     }
 
-    /**
-     * Shift the visual center by (x, y) CSS pixels — e.g. to keep the swarm
-     * centered in the free space next to a side panel. (0, 0) resets.
-     */
-    setCenterOffset(x: number, y = 0): void {
-        this.centerOffset = { x, y };
-        this.resize();
-    }
-
     /** Current log-spaced spectrum, 0–1 per slice (what spectrum(k) reads). */
     get spectrum(): Float32Array {
         return this.audio.spectrum;
@@ -285,23 +285,6 @@ export class Swarm {
             reduced: this.reduced,
             still: this.motion.reduced,
         };
-    }
-
-    pause(): void {
-        this.running = false;
-    }
-
-    resume(): void {
-        if (this.running) return;
-        this.running = true;
-        this.lastTime = performance.now();
-        this.quality.reset();
-    }
-
-    /** PNG data URL of the current frame. */
-    screenshot(): string {
-        this.render();
-        return this.renderer.domElement.toDataURL('image/png');
     }
 
     dispose(): void {
@@ -412,9 +395,6 @@ export class Swarm {
         this.composer?.setSize(width, height);
         this.camera.aspect = width / height;
         this.camera.fov = verticalFov(this.camera.aspect);
-        const { x, y } = this.centerOffset;
-        if (x || y) this.camera.setViewOffset(width, height, -x, -y, width, height);
-        else this.camera.clearViewOffset();
         this.camera.updateProjectionMatrix();
         this.still.invalidate(); // resizing clears the canvas
     }
@@ -428,7 +408,7 @@ export class Swarm {
         this.frameId = requestAnimationFrame(this.tick);
         const dt = Math.min((now - this.lastTime) / 1000, 0.25);
         this.lastTime = now;
-        if (!this.running || !this.visible || dt <= 0) return;
+        if (!this.visible || dt <= 0) return;
 
         if (this.pendingFallback) {
             this.pendingFallback = false;
@@ -482,6 +462,8 @@ export class Swarm {
     }
 
     private report(error: unknown): void {
-        this.onError?.(error instanceof Error ? error : new Error(String(error)));
+        const failure = error instanceof Error ? error : new Error(String(error));
+        if (this.onError) this.onError(failure);
+        else console.warn(failure.message);
     }
 }

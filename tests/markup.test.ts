@@ -5,6 +5,7 @@ import {
     DEFAULT_LABEL,
     accessibleName,
     dedent,
+    extractElement,
     formatMarkup,
     parseColors,
     parseMarkup,
@@ -108,6 +109,16 @@ describe('markup', () => {
         expect(formatMarkup(parseMarkup(galaxy))).toBe(galaxy);
     });
 
+    it('pulls the element out of a whole page, exactly as written', () => {
+        // Example files are pages you can open; the AI docs quote the element from them.
+        const page = `<!doctype html>\n<html>\n<head>\n<script src="https://x/nano-swarm.js"></script>\n</head>\n<body>\n${galaxy}\n</body>\n</html>\n`;
+        expect(extractElement(page)).toBe(galaxy);
+    });
+
+    it('says so when there is no element to pull out', () => {
+        expect(() => extractElement('<p>nothing here</p>')).toThrow('No <nano-swarm> element found');
+    });
+
     it('puts each attribute on its own line when the tag would be too long, and reads it back', () => {
         const markup = {
             attributes: [['title', 'Lorenz'], ['colors', '#1a237e #4fc3f7 #ff4081'], ['background', '#02040a'], ['speed', '2.5']],
@@ -166,5 +177,25 @@ describe('accessible name', () => {
         expect(accessibleName(null)).toBe(DEFAULT_LABEL);
         expect(accessibleName('')).toBe(DEFAULT_LABEL);
         expect(accessibleName('   ')).toBe(DEFAULT_LABEL);
+    });
+});
+
+describe('H5 · ">" in attributes and formulas', () => {
+    it('a title with ">" survives format → parse', () => {
+        const markup = { attributes: [['title', 'a > b']] as [AttributeName, string][], formula: 'x = u\ny = 0\nz = 0' };
+        const html = formatMarkup(markup);
+        expect(html).toContain('title="a &gt; b"');
+        expect(parseMarkup(html)).toEqual(markup);
+    });
+
+    it('a formula with ">" survives format → parse', () => {
+        const markup = { attributes: [] as [AttributeName, string][], formula: 'x = u > 1 ? 1 : 0\ny = 0\nz = 0' };
+        expect(parseMarkup(formatMarkup(markup))).toEqual(markup);
+    });
+
+    it('a hand-written title="a > b" is read whole, not cut at the first ">"', () => {
+        const parsed = parseMarkup('<nano-swarm title="a > b" solid>\n  x = u\n  y = 0\n  z = 0\n</nano-swarm>');
+        expect(parsed.attributes).toEqual([['title', 'a > b'], ['solid', '']]);
+        expect(parsed.formula).toBe('x = u\ny = 0\nz = 0');
     });
 });

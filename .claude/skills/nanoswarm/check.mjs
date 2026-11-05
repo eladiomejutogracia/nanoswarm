@@ -490,7 +490,7 @@ function jsExpr(e) {
 }
 function toJavaScriptSource(program) {
 	const body = program.statements.map((s) => `        const l_${s.name} = ${jsExpr(s.expr)};`).join("\n");
-	const color = program.hasColor ? `        if (C !== null) C[i] = l_c === l_c ? (l_c < 0 ? 0 : l_c > 1 ? 1 : l_c) : 0;\n` : "";
+	const color = program.hasColor ? `        if (C !== null) { const c = Math.fround(l_c); C[i] = Number.isFinite(c) ? (c < 0 ? 0 : c > 1 ? 1 : c) : 0; }\n` : "";
 	const motion = program.kind === "motion";
 	const read = motion ? "const x = P[i3], y = P[i3 + 1], z = P[i3 + 2], r = params[i3 + 2];" : "const u = params[i3], v = params[i3 + 1], r = params[i3 + 2];";
 	const [ox, oy, oz] = motion ? [
@@ -509,9 +509,10 @@ return function nsFormula(out, C, params, count, f, P) {
         const i3 = i * 3;
         ${read}
 ${body}
-        out[i3]     = Number.isFinite(${ox}) ? ${ox} : 0;
-        out[i3 + 1] = Number.isFinite(${oy}) ? ${oy} : 0;
-        out[i3 + 2] = Number.isFinite(${oz}) ? ${oz} : 0;
+        const ox = Math.fround(${ox}), oy = Math.fround(${oy}), oz = Math.fround(${oz});
+        out[i3]     = Number.isFinite(ox) ? ox : 0;
+        out[i3 + 1] = Number.isFinite(oy) ? oy : 0;
+        out[i3 + 2] = Number.isFinite(oz) ? oz : 0;
 ${color}    }
 };`;
 }
@@ -653,8 +654,10 @@ var STILL = {
 	spectrum: /* @__PURE__ */ new Float32Array(0)
 };
 var FlowError = class extends Error {
-	constructor(message) {
+	code;
+	constructor(code, message) {
 		super(message);
+		this.code = code;
 		this.name = "FlowError";
 	}
 };
@@ -706,11 +709,11 @@ function calibrateFlow(formula, seed = 11) {
 			}
 		}
 	}
-	if (recorded.length === 0 || leftTheRegion(recorded)) throw new FlowError("This motion runs off to infinity, so particles would fly away. Try smaller numbers, or pull points back (for example \"- x\").");
+	if (recorded.length === 0 || leftTheRegion(recorded)) throw new FlowError("diverges", "This motion runs off to infinity, so particles would fly away. Try smaller numbers, or pull points back (for example \"- x\").");
 	const sample = new Float32Array(recorded);
 	const still = stillTrajectories(sample, weights, owners, n);
 	for (let i = 0; i < weights.length; i++) if (still[owners[i]]) weights[i] = 0;
-	if (weights.every((w) => w === 0)) throw new FlowError("This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.");
+	if (weights.every((w) => w === 0)) throw new FlowError("rests", "This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.");
 	const probe = pickWeighted(sample, weights, SEED_COUNT, random);
 	const center = [
 		median(probe, 0),
@@ -718,7 +721,7 @@ function calibrateFlow(formula, seed = 11) {
 		median(probe, 2)
 	];
 	const radius = percentileDistance(probe, center, .95);
-	if (radius < 1e-6) throw new FlowError("This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.");
+	if (radius < 1e-6) throw new FlowError("rests", "This motion settles on a single point, so there is nothing to draw. Attractors need a motion that keeps moving.");
 	const scale = FLOW_RADIUS / radius;
 	const regionSq = (SEED_REGION * radius) ** 2;
 	const seeds = pickWeighted(sample, weights.map((w, i) => {
@@ -845,7 +848,7 @@ var ATTRIBUTES = {
 	bloom: "Glow around bright areas (GPU only). Optionally a strength, e.g. bloom=\"0.8\"",
 	speed: "Pace: 1 normal, 2 twice as fast, 0.5 half",
 	tilt: "Camera height in degrees: 0 side view, 90 top-down",
-	particles: "How many particles (default: chosen for the device)",
+	particles: "The most particles to draw (default: chosen for the device; lowered if it runs slow)",
 	audio: "An audio file URL, or \"mic\". Starts on the first click",
 	sensitivity: "How strongly sound moves things (default 1)",
 	renderer: "\"gpu\" or \"cpu\" (default: automatic)",
@@ -905,7 +908,7 @@ function dedent(text) {
 	const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^\s*/)[0].length));
 	return lines.map((l) => l.slice(Number.isFinite(indent) ? indent : 0)).join("\n");
 }
-var ELEMENT_RE = /<nano-swarm\b([^>]*)>([\s\S]*?)<\/nano-swarm>/i;
+var ELEMENT_RE = /<nano-swarm\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/nano-swarm>/i;
 var ATTRIBUTE_RE = /([a-z][a-z-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/gi;
 /**
 * Read a <nano-swarm> out of an HTML string (an example file, a share link).

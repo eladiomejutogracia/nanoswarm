@@ -6,24 +6,34 @@
 
 Particle swarms shaped by **formulas**, **3D models** and **sound** — as one HTML element.
 
-[![A spiral galaxy made of particles, drawn by a formula inside a nano-swarm element](.github/preview.jpg)](https://eladiomejutogracia.github.io/nanoswarm/)
+[![A spiral galaxy made of particles, next to the five lines of formula that draw it](web/public/preview.jpg)](https://eladiomejutogracia.github.io/nanoswarm/)
 
 ```html
 <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
 
-<nano-swarm title="Torus" colors="#ff6e7f #bf5af2 #0a84ff" solid>
-  R = 3 + 1.2 * cos(v)
-  x = R * cos(u)
-  y = 1.2 * sin(v)
-  z = R * sin(u)
+<nano-swarm colors="#ff3d00 #ff9100 #ffe57f" tilt="40" style="height: 100vh">
+  R = 4.5 * (v / TAU)^1.5
+  a = 1.2*R - 0.2*t + floor(r*3) * TAU/3
+  x = R * cos(a)
+  y = 0.3 * sin(3*u)
+  z = R * sin(a)
 </nano-swarm>
 ```
 
+That is the picture above: the header image is a screenshot of
+[`web/public/preview.html`](web/public/preview.html), which is this snippet and nothing else.
+`v` walks each particle outwards, `r` drops it into one of three arms, `t` turns the whole thing.
+
 The formula is the element's text. Everything else is an attribute. That's the whole idea.
+**Give the element a height** (here `style="height: 100vh"`) — on its own it is a 240 px strip.
 The script is served from the [playground](https://eladiomejutogracia.github.io/nanoswarm/) site and always
 tracks the latest version; for a fixed version, download `nano-swarm.js` from a
 [release](https://github.com/eladiomejutogracia/nanoswarm/releases) and host it yourself.
 The script includes three.js; it picks the GPU when the browser can and the CPU when it can't.
+
+**What it costs.** That one `<script>` is 767 kB raw and **196 kB gzipped**, three.js included — there is
+nothing else to load. From npm, where three.js is your own dependency, the module is 24 kB gzipped.
+(Measured on `v1.0.0-alpha.1` with `npm run build && gzip -9 -c dist/nano-swarm.js | wc -c`.)
 
 The [playground](web/) is a live editor for one of these elements: every control just edits it,
 and the **</> Code** panel shows it as it is. Save it as a page or copy a link.
@@ -93,7 +103,7 @@ the text is never run directly, so formulas from a shared link are safe.
 | `tilt="40"` | Camera height in degrees: 0 side view, 90 top-down |
 | `audio="song.mp3"` / `audio="mic"` | Sound to react to — starts on the first click (browser rule) |
 | `sensitivity="1.5"` | How strongly sound moves things |
-| `particles="60000"` | Particle count (default: chosen for the device, lowered if it runs slow) |
+| `particles="60000"` | The most particles to draw: a ceiling, not an order — a slow device still lowers it (default: chosen for the device). The CPU renderer tops out at 40,000 |
 | `renderer="cpu"` | Force `gpu` or `cpu` (default: automatic) |
 | `no-pointer` | The pointer doesn't push particles |
 | `no-rotate` | The camera doesn't orbit on its own |
@@ -114,10 +124,11 @@ the swarm follows — particles fly to new shapes.
 
 ## Examples
 
-[`examples/`](examples/) holds the built-in creations — plain `<nano-swarm>` files, grouped in
-`sound/`, `shapes/` and `attractors/`. The playground's gallery is built from that folder, and the tests
-check that every example compiles, stays on screen and uses its colors well. Add a file, and it
-shows up.
+[`examples/`](examples/) holds the built-in creations, grouped in `sound/`, `shapes/` and `attractors/`.
+Each one is a whole page: **download it and open it in a browser** and it runs, because it is exactly what
+the playground's **Save .html** writes — a `<script>`, a height, and one `<nano-swarm>`. The gallery is
+built from that folder, and the tests check that every example compiles, stays on screen and uses its
+colors well. Add a file, and it shows up.
 
 ## With AI assistants
 
@@ -153,14 +164,20 @@ swarm.setAudio('mic');
 
 `document.querySelector('nano-swarm').swarm` gives you the same object for an element.
 Events: the element fires `swarm-load` once a formula or model is showing (then `swarm.animations`
-lists the model's animations), and `swarm-error` (`event.detail` is the Error) for a bad formula, model or audio.
+lists the model's animations), and `swarm-error` (`event.detail` is the Error) for a bad formula, model or audio,
+or a browser without WebGL. Failures are also written to the console, so a broken formula never looks like an
+empty element. The full public surface, and what is deliberately left out, is in [API.md](API.md).
 
 ## GPU and CPU
 
 `renderer` defaults to automatic: the GPU (GPGPU float textures; the formula runs once per particle
 per frame in a small target pass) unless the browser lacks float render targets or vertex textures,
 or renders in software. The CPU path uses plain `Float32Array` physics, no bloom, pixel ratio 1 —
-about 2 ms per frame for 200k particles on a model. Both share one physics model, so they look the same.
+capped at 40,000 particles. Measured at that cap: an animated jellyfish costs 13 ms per frame, a galaxy
+7 ms, a Lorenz attractor 3 ms (Chromium 156, Intel i7-9750H, median of the update step without drawing;
+the full table and the method are in [API.md](API.md)). The GPU path runs the same physics in a shader and
+handles hundreds of thousands of particles — it has not been measured the same way, so no number is
+claimed for it. Both share one physics model, so they look the same.
 
 ## Develop
 
@@ -192,7 +209,7 @@ src/
   backends/  physics, GPU and CPU backends, backend selection
   runtime/   pointer, auto quality, camera tilt
   swarm.ts   the engine behind the element
-examples/    the built-in creations, one <nano-swarm> per file
+examples/    the built-in creations, one page with one <nano-swarm> per file
 .claude/skills/nanoswarm/   the AI skill (SKILL.md + check.mjs), generated
 web/         the playground
 ```
@@ -204,5 +221,6 @@ Creations, examples and code are all welcome — see [CONTRIBUTING.md](CONTRIBUT
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The playground's demo track and fox model come from others;
-see [CREDITS.md](CREDITS.md).
+MIT — see [LICENSE](LICENSE). The playground's demo track and fox model come from others: the fox is
+**[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**, so if you reuse it you must credit it
+too. Full details in [CREDITS.md](CREDITS.md); the playground carries the credit on the page itself.
