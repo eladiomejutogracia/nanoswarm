@@ -19,6 +19,7 @@ function fakeSetting(initial: boolean) {
     };
     return {
         matchMedia: (q: string) => (queries.push(q), query),
+        query,
         queries,
         listeners,
         set(reduced: boolean) {
@@ -46,6 +47,17 @@ describe('MotionPreference', () => {
         setting.set(false);
         expect(preference.reduced).toBe(false);
         expect(seen).toEqual([true, false]);
+    });
+
+    it('reports a change once even when the event never arrives, as soon as the setting is read', () => {
+        const setting = fakeSetting(false);
+        const seen: boolean[] = [];
+        const preference = new MotionPreference((reduced) => seen.push(reduced), setting.matchMedia);
+        setting.listeners.clear(); // the browser swallowed the event
+        (setting.query as { matches: boolean }).matches = true;
+        expect(preference.reduced).toBe(true);
+        expect(preference.reduced).toBe(true);
+        expect(seen).toEqual([true]);
     });
 
     it('stops listening once disposed', () => {

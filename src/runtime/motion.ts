@@ -11,21 +11,33 @@ export interface MotionQuery {
     removeEventListener(type: 'change', listener: () => void): void;
 }
 
-/** Follows the operating-system setting live. Where there is no `matchMedia` (tests, servers) motion is never reduced. */
+/**
+ * Follows the operating-system setting live. A change is reported once, whether it arrives as a `change`
+ * event or is noticed on the next read: Chrome does not send the event to a query that was read in
+ * the meantime, and the swarm reads it every frame.
+ * Where there is no `matchMedia` (tests, servers) motion is never reduced.
+ */
 export class MotionPreference {
     private readonly query: MotionQuery | null;
-    private readonly listener = () => this.onChange(this.reduced);
+    private last: boolean;
+    private readonly listener = () => void this.reduced;
 
     constructor(
         private readonly onChange: (reduced: boolean) => void,
         matchMedia: ((query: string) => MotionQuery) | undefined = globalThis.matchMedia?.bind(globalThis),
     ) {
         this.query = matchMedia ? matchMedia(REDUCED_MOTION_QUERY) : null;
+        this.last = this.query?.matches ?? false;
         this.query?.addEventListener('change', this.listener);
     }
 
     get reduced(): boolean {
-        return this.query?.matches ?? false;
+        const now = this.query?.matches ?? false;
+        if (now !== this.last) {
+            this.last = now;
+            this.onChange(now);
+        }
+        return now;
     }
 
     dispose(): void {
