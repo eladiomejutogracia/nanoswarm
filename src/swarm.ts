@@ -13,6 +13,7 @@ import type { Backend, BackendKind, FrameInput } from './backends/types';
 import { resolveLook, type Look } from './looks';
 import { PointerTracker } from './runtime/pointer';
 import { AutoQuality } from './runtime/quality';
+import { describeShaderFailure } from './runtime/shader-log';
 import { DEFAULT_VIEW, FIELD_OF_VIEW, ViewTween, verticalFov } from './runtime/view';
 import { DEFAULT_FORMULA, resolveSource, type Source, type Target } from './sources';
 
@@ -126,7 +127,11 @@ export class Swarm {
         const canvas = this.renderer.domElement;
         canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
         container.appendChild(canvas);
-        this.renderer.debug.onShaderError = () => this.onShaderError();
+        // Setting this replaces three.js's own report, so print the driver's message before reacting.
+        this.renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
+            console.error(describeShaderFailure(gl, program, vertex, fragment));
+            this.onShaderError();
+        };
 
         this.camera.position.setFromSphericalCoords(
             DEFAULT_VIEW.distance,
