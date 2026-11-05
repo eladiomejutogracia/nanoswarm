@@ -13,6 +13,7 @@
  * whitelist. Nothing the user types is ever evaluated as JavaScript or GLSL
  * directly: both backends emit code from the validated AST only.
  */
+import { float32Constant, overflowsFloat32 } from './float32';
 
 export type BinaryOp = '+' | '-' | '*' | '/' | '^';
 
@@ -329,8 +330,8 @@ class Parser {
 
         if (tok.type === 'num') {
             const value = Number(tok.text);
-            if (!Number.isFinite(value)) throw this.error(tok, `Number "${tok.text}" is too large`);
-            return { kind: 'num', value };
+            if (overflowsFloat32(value)) throw this.error(tok, `Number "${tok.text}" is too large (the most a formula can hold is about 3.4e38)`);
+            return { kind: 'num', value: float32Constant(value) };
         }
 
         if (tok.type === '(') {
@@ -343,7 +344,7 @@ class Parser {
             const name = tok.text;
             if (this.peek().type === '(') return this.parseCall(tok);
             if (Object.hasOwn(FUNCTIONS, name)) throw this.error(tok, `"${name}" is a function — call it like ${name}(...)`);
-            if (Object.hasOwn(CONSTANTS, name)) return { kind: 'num', value: CONSTANTS[name] };
+            if (Object.hasOwn(CONSTANTS, name)) return { kind: 'num', value: float32Constant(CONSTANTS[name]) };
             if (Object.hasOwn(this.inputs, name)) {
                 const input = name as InputName;
                 if (input === 't') this.usesTime = true;
