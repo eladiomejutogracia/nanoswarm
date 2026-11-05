@@ -51,6 +51,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Browser for the shader tests (headless Chromium compiles the generated GLSL; no GPU needed)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
       - run: npm install --no-save three@0.172.0 @types/three@0.172.0
       - run: npm run typecheck
       - run: npm test
