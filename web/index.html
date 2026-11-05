@@ -3,8 +3,23 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NanoSwarm</title>
-    <meta name="description" content="Particle swarms shaped by formulas, 3D models and sound — as one HTML element." />
+    <title>NanoSwarm — particle swarms from a formula, a 3D model or a song</title>
+    <meta name="description" content="Particle swarms shaped by formulas, 3D models and sound — as one HTML element. Write a formula, watch it, copy the element into your page." />
+
+    <!-- Shared links are the product's shop window: a title, a sentence and the picture.
+         Absolute addresses, because a crawler does not resolve relative ones. Keep them
+         in step with SITE_URL in src/ai/reference.ts — tests/docs.test.ts checks that. -->
+    <link rel="canonical" href="https://eladiomejutogracia.github.io/nanoswarm/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NanoSwarm" />
+    <meta property="og:url" content="https://eladiomejutogracia.github.io/nanoswarm/" />
+    <meta property="og:title" content="NanoSwarm — particle swarms from a formula, a 3D model or a song" />
+    <meta property="og:description" content="One HTML element. Its text is a formula, its attributes are settings. Runs on the GPU, falls back to the CPU." />
+    <meta property="og:image" content="https://eladiomejutogracia.github.io/nanoswarm/preview.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="A spiral galaxy made of particles, next to the five lines of formula that draw it." />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23000'/%3E%3Cg fill='%23fff'%3E%3Ccircle cx='9' cy='9' r='2.5'/%3E%3Ccircle cx='16' cy='9' r='2.5'/%3E%3Ccircle cx='23' cy='9' r='2.5'/%3E%3Ccircle cx='9' cy='16' r='2.5'/%3E%3Ccircle cx='23' cy='16' r='2.5'/%3E%3Ccircle cx='9' cy='23' r='2.5'/%3E%3Ccircle cx='16' cy='23' r='2.5'/%3E%3Ccircle cx='23' cy='23' r='2.5'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23D71921'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,6 +38,7 @@
             <p>Particles shaped by a formula, a 3D model or a song.</p>
         </div>
         <nav class="toolbar" aria-label="View">
+            <a class="button ghost" href="https://github.com/eladiomejutogracia/nanoswarm">GitHub</a>
             <button id="theme-toggle" class="ghost" aria-label="Switch theme">Light</button>
             <button id="panel-toggle" class="ghost" aria-expanded="true" aria-controls="panel">Controls</button>
             <button id="code-toggle" class="ghost" aria-expanded="false" aria-controls="code-panel">&lt;/&gt; Code</button>
@@ -145,6 +161,27 @@
                 <button data-renderer="cpu">CPU</button>
             </div>
             <p id="info" class="status muted"></p>
+        </section>
+
+        <!-- The way out of the playground: the code, the docs, the licence and the credits
+             the demo assets require. Without it, liking what you see leads nowhere. -->
+        <section class="about">
+            <h2>Take it with you</h2>
+            <ul class="links">
+                <li><a href="https://github.com/eladiomejutogracia/nanoswarm">Source on GitHub</a></li>
+                <li><a href="https://github.com/eladiomejutogracia/nanoswarm#readme">Read the docs</a></li>
+                <li><a href="./nanoswarm-skill.zip">AI skill (.zip)</a> <span class="muted">— Claude Code, GitHub Copilot</span></li>
+                <li><a href="./llms.txt">llms.txt</a> <span class="muted">— the same reference for any assistant</span></li>
+            </ul>
+            <p class="muted credits">
+                <a href="https://github.com/eladiomejutogracia/nanoswarm/blob/main/LICENSE">MIT licence</a> ·
+                © 2026 <a href="https://github.com/eladiomejutogracia">Eladio Mejuto</a>.
+                Demo model <a href="https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Fox">Fox</a>
+                by PixelMannen, tomkranis, AsoboStudio and scurest —
+                <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+                Demo track <a href="https://opengameart.org/content/chill-lofi-inspired">Chill lofi inspired</a>
+                by omfgdude — CC0.
+            </p>
         </section>
 
         <footer class="panel-foot">

@@ -1,3 +1,13 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wave</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #010608 } nano-swarm { height: 100vh }</style>
+</head>
+<body>
 <nano-swarm title="Wave" colors="#00ff87 #60efff #0061ff" background="#010608" tilt="35">
   # Ripples on a plane — the bass makes them taller
   x = (u - PI) * 1.3
@@ -6,3 +16,5 @@
   y = sin(2*d - 2*t) * 1.2 / (1 + 0.3*d) * (1 + bass * 2)
   c = 0.5 + y / 3
 </nano-swarm>
+</body>
+</html>
