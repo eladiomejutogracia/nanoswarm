@@ -1,3 +1,13 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ring</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #03040a } nano-swarm { height: 100vh }</style>
+</head>
+<body>
 <nano-swarm title="Ring" tilt="24">
   # 64 bars in a circle, mirrored: bass at the back, treble at the front
   bar = floor(u / TAU * 64)
@@ -12,3 +22,5 @@
   # loud frequencies light up
   c = 0.15 + spectrum(k) * 0.85
 </nano-swarm>
+</body>
+</html>

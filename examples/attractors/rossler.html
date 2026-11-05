@@ -1,3 +1,13 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rössler</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #01040a } nano-swarm { height: 100vh }</style>
+</head>
+<body>
 <nano-swarm title="Rössler" colors="#0d47a1 #26c6da #f4ff81" background="#01040a" tilt="25">
   # Rössler: a flat spiral that folds up into a spike.
   # y is the up axis, squashed to 40% so the spike fits the frame
@@ -6,3 +16,5 @@
   dy = 0.08 + y * (x - 5.7)
   c = (sqrt(dx*dx + dy*dy + dz*dz) - 2) / 10
 </nano-swarm>
+</body>
+</html>

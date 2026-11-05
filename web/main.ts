@@ -324,6 +324,7 @@ function savePage(): void {
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
   ${SCRIPT_TAG}
   <style>body { margin: 0; background: ${background} } nano-swarm { height: 100vh }</style>

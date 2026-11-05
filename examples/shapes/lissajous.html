@@ -1,6 +1,18 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lissajous</title>
+  <script src="https://eladiomejutogracia.github.io/nanoswarm/nano-swarm.js"></script>
+  <style>body { margin: 0; background: #03040a } nano-swarm { height: 100vh }</style>
+</head>
+<body>
 <nano-swarm title="Lissajous">
   # A curve: only u matters, v just gives it some thickness
   x = 4 * sin(3*u + 0.5*t) + 0.12*cos(v)
   y = 4 * sin(2*u) + 0.12*sin(v)
   z = 4 * cos(5*u)
 </nano-swarm>
+</body>
+</html>

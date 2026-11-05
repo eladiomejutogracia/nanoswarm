@@ -11,7 +11,9 @@ Made something nice in the [playground](https://eladiomejutogracia.github.io/nan
 
 Built-in creations are plain files — no code needed.
 
-1. Save your element as `examples/<sound|shapes|attractors>/<name>.html` (one `<nano-swarm>` with a `title`).
+1. In the playground, click **Save .html** and put the file in
+   `examples/<sound|shapes|attractors>/<name>.html`. That file is already the right shape: a `<script>`,
+   a height, and one `<nano-swarm>` with a `title`. Opening it in a browser shows your creation.
 2. Check it: `npm run check -- examples/shapes/<name>.html`.
 3. Run `npm test` — every example must compile, stay on screen and pass the checker — and
    `npx vitest -u` if the AI docs need regenerating.

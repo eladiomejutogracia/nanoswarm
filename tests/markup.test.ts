@@ -3,6 +3,7 @@ import { LOOK_DEFAULTS } from '../src/looks';
 import {
     ATTRIBUTES,
     dedent,
+    extractElement,
     formatMarkup,
     parseColors,
     parseMarkup,
@@ -104,6 +105,16 @@ describe('markup', () => {
 
     it('formats back to the same HTML', () => {
         expect(formatMarkup(parseMarkup(galaxy))).toBe(galaxy);
+    });
+
+    it('pulls the element out of a whole page, exactly as written', () => {
+        // Example files are pages you can open; the AI docs quote the element from them.
+        const page = `<!doctype html>\n<html>\n<head>\n<script src="https://x/nano-swarm.js"></script>\n</head>\n<body>\n${galaxy}\n</body>\n</html>\n`;
+        expect(extractElement(page)).toBe(galaxy);
+    });
+
+    it('says so when there is no element to pull out', () => {
+        expect(() => extractElement('<p>nothing here</p>')).toThrow('No <nano-swarm> element found');
     });
 
     it('puts each attribute on its own line when the tag would be too long, and reads it back', () => {

@@ -158,6 +158,13 @@ export function formatMarkup({ attributes, formula }: SwarmMarkup): string {
 const ELEMENT_RE = /<nano-swarm\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/nano-swarm>/i;
 const ATTRIBUTE_RE = /([a-z][a-z-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/gi;
 
+/** The <nano-swarm> inside an HTML page, exactly as it is written there. */
+export function extractElement(html: string): string {
+    const match = ELEMENT_RE.exec(html);
+    if (!match) throw new Error('[NanoSwarm] No <nano-swarm> element found.');
+    return match[0];
+}
+
 /**
  * Read a <nano-swarm> out of an HTML string (an example file, a share link).
  * Unknown attributes are dropped — only the documented vocabulary survives.
