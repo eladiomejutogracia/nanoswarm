@@ -126,3 +126,23 @@ describe('errors', () => {
         expect(() => make()).toThrow(/WebGL is not available/);
     });
 });
+
+describe('shader errors', () => {
+    it("prints the driver's message before reacting, instead of replacing three.js's report with silence", () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const swarm = make();
+        const { onShaderError } = (swarm as unknown as { renderer: ReturnType<typeof fakeRenderer> }).renderer.debug as {
+            onShaderError: (gl: unknown, program: unknown, vertex: unknown, fragment: unknown) => void;
+        };
+        const gl = {
+            getProgramInfoLog: () => 'link failed',
+            getShaderInfoLog: (shader: string) => (shader === 'fs' ? "ERROR: 0:2: 'oops' : undeclared identifier" : ''),
+            getShaderSource: () => 'void main() {\n  oops;\n}',
+        };
+        onShaderError(gl, {}, 'vs', 'fs');
+        const message = String(error.mock.calls[0]?.[0]);
+        expect(message).toContain('link failed');
+        expect(message).toContain("'oops' : undeclared identifier");
+        expect(message).toContain('> 2:   oops;');
+    });
+});
