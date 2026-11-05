@@ -36,6 +36,12 @@ Read [AGENTS.md](AGENTS.md) first — the architecture fits on one page, and it 
 NanoSwarm simple. In short: one way to do each thing, options that work for every shape, pure and tested
 logic, and CPU/GPU parity. Visual changes need a look in a real browser.
 
+The package promises a range of three.js versions (`peerDependencies` in `package.json`). It is only as
+wide as what CI builds and tests: the pinned version (top) and, in the `three-floor` job, the lowest.
+When you bump `three` or `@types/three`, raise the top of the range with it; to support older versions,
+test them first and lower the floor in `package.json` and `ci.yml` together (`tests/package.test.ts` checks
+that they agree). Widening the range is compatible; narrowing it is not.
+
 Bugs and ideas go in [Issues](https://github.com/eladiomejutogracia/nanoswarm/issues); questions in
 [Discussions](https://github.com/eladiomejutogracia/nanoswarm/discussions).
 

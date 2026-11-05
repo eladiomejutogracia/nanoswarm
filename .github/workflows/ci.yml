@@ -33,6 +33,23 @@ jobs:
       - name: Every example — and the page the header image shows — passes the checker
         run: npm run check -- examples web/public/preview.html
 
+  # package.json promises a range of three.js versions (peerDependencies). `check` tests the pinned top
+  # of it; this job tests the bottom, so the range is only as wide as what is actually built and tested.
+  # Keep the version here equal to the floor in package.json (tests/package.test.ts checks it).
+  three-floor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save three@0.172.0 @types/three@0.172.0
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
   # Pull requests only: stops new dependencies that have known vulnerabilities.
   dependencies:
     if: github.event_name == 'pull_request'

@@ -1,12 +1,9 @@
 {
   "name": "nanoswarm",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0",
   "description": "Particle swarms shaped by formulas, 3D models and sound — as one HTML element.",
   "author": "Eladio Mejuto",
   "license": "MIT",
-  "engines": {
-    "node": ">=24"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eladiomejutogracia/nanoswarm.git"
@@ -24,12 +21,16 @@
       "import": "./dist/nanoswarm.js"
     },
     "./element": {
-      "default": "./dist/nano-swarm.js"
+      "types": "./dist/types/element/register.d.ts",
+      "import": "./dist/element.js"
     }
   },
   "unpkg": "dist/nano-swarm.js",
   "jsdelivr": "dist/nano-swarm.js",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/element.js",
+    "./dist/nano-swarm.js"
+  ],
   "files": [
     "dist"
   ],
@@ -42,10 +43,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:check": "vite build --mode check",
-    "check": "node .claude/skills/nanoswarm/check.mjs"
+    "check": "node .claude/skills/nanoswarm/check.mjs",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "three": ">=0.160.0"
+    "three": ">=0.172.0 <0.188.0"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
@@ -57,10 +59,17 @@
   },
   "keywords": [
     "particles",
+    "particle-system",
     "threejs",
+    "three",
     "webgl",
+    "gpgpu",
+    "web-component",
+    "custom-element",
     "audio-visualizer",
+    "generative-art",
     "parametric",
-    "formula"
+    "formula",
+    "3d-model"
   ]
 }

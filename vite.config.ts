@@ -6,7 +6,7 @@ const root = import.meta.dirname;
 const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as { version: string };
 
 // `vite` / `vite build`         → the playground web page (web/)
-// `vite build --mode lib`       → dist/nanoswarm.js — ES module, three.js as a peer dependency
+// `vite build --mode lib`       → dist/nanoswarm.js + dist/element.js — ES modules, three.js as a peer dependency
 // `vite build --mode element`   → dist/nano-swarm.js — one drop-in <script>, three.js included
 // `vite build --mode check`     → .claude/skills/nanoswarm/check.mjs — the validator, Node only
 export default defineConfig(({ mode }) => ({
@@ -22,9 +22,12 @@ function configFor(mode: string) {
                 emptyOutDir: true,
                 // ESM only: three's example modules (OrbitControls, GPGPU…) have no UMD globals.
                 lib: {
-                    entry: resolve(root, 'src/index.ts'),
+                    entry: {
+                        nanoswarm: resolve(root, 'src/index.ts'),
+                        element: resolve(root, 'src/element/register.ts'), // `nanoswarm/element`
+                    },
                     formats: ['es'],
-                    fileName: 'nanoswarm',
+                    fileName: (_format: string, name: string) => `${name}.js`,
                 },
                 rolldownOptions: {
                     external: [/^three(\/.*)?$/],

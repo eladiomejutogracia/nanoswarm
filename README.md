@@ -27,8 +27,10 @@ That is the picture above: the header image is a screenshot of
 The formula is the element's text. Everything else is an attribute. That's the whole idea.
 **Give the element a height** (here `style="height: 100vh"`) — on its own it is a 240 px strip.
 The script is served from the [playground](https://eladiomejutogracia.github.io/nanoswarm/) site and always
-tracks the latest version; for a fixed version, download `nano-swarm.js` from a
-[release](https://github.com/eladiomejutogracia/nanoswarm/releases) and host it yourself.
+tracks the latest `main`: good for trying it out. For a page you publish, use a fixed version: the same
+file is on npm, so `https://cdn.jsdelivr.net/npm/nanoswarm@1.0.0/dist/nano-swarm.js` never changes
+(or download `nano-swarm.js` from a [release](https://github.com/eladiomejutogracia/nanoswarm/releases)
+and host it yourself).
 The script includes three.js; it picks the GPU when the browser can and the CPU when it can't.
 
 **What it costs.** That one `<script>` is 767 kB raw and **196 kB gzipped**, three.js included — there is
@@ -138,6 +140,17 @@ The skill and `llms.txt` are generated from the code, so they always match the c
 
 ## JavaScript
 
+In an app with a bundler, install it next to three.js (`three` is a peer dependency, versions 0.172 to 0.187
+— the range CI builds and tests):
+
+```bash
+npm install nanoswarm three
+```
+
+```js
+import 'nanoswarm/element';  // registers <nano-swarm>; this import is the whole point, don't remove it
+```
+
 The element is built on a small API you can use directly:
 
 ```js
@@ -174,7 +187,7 @@ claimed for it. Both share one physics model, so they look the same.
 npm run dev         # playground
 npm test            # vitest
 npm run typecheck
-npm run build       # dist/nanoswarm.js (ES module, three.js peer) + dist/nano-swarm.js (drop-in)
+npm run build       # dist/nanoswarm.js + dist/element.js (ES modules, three.js peer) + dist/nano-swarm.js (drop-in)
 npm run build:web   # playground → dist-web/
 ```
 
