@@ -309,28 +309,104 @@ describe('motion formulas (dx, dy, dz)', () => {
     });
 });
 
+import { float32Constant, float32Text, overflowsFloat32 } from '../src/formula/float32';
+import { glslNumber } from '../src/formula/emit';
+
 describe('H1 · values float32 cannot hold', () => {
     it('x = 1e39 collapses to 0, as it does on the GPU, instead of staying a huge double', () => {
-        expect(run(xyz('1e39', '-1e39', '1e300'))).toEqual([0, 0, 0]);
+        expect(run(xyz('1e30 * 1e10', '-1e30 * 1e10', 'exp(1000)'))).toEqual([0, 0, 0]);
     });
 
     it('a motion that overflows float32 stops (0) rather than flinging the particle away', () => {
-        const f = compileFormula('dx = 1e39\ndy = 1\ndz = -1e39');
+        const f = compileFormula('dx = 1e30 * 1e10\ndy = 1\ndz = -1e30 * 1e10');
         const out = new Float32Array(3);
         f.evaluate(out, null, new Float32Array(3), 1, { t: 0, bass: 0, mid: 0, treble: 0, level: 0, spectrum: new Float32Array(64) }, new Float32Array(3));
         expect(Array.from(out)).toEqual([0, 1, 0]);
     });
 
     it('a color that overflows or is NaN is 0, matching clamp(nsFinite(c), 0, 1) in GLSL', () => {
-        const f = compileFormula('x = u\ny = 0\nz = 0\nc = 1e39');
+        const f = compileFormula('x = u\ny = 0\nz = 0\nc = 1e30 * 1e10');
         const out = new Float32Array(3);
         const colors = new Float32Array(1);
         f.evaluate(out, colors, new Float32Array(3), 1, { t: 0, bass: 0, mid: 0, treble: 0, level: 0, spectrum: new Float32Array(64) });
         expect(colors[0]).toBe(0);
     });
 
+    it.each(['1e39', '1e300', '3.5e38', '1e308'])('the literal %s is rejected: no float32 holds it, so no shader could read it', (literal) => {
+        expect(errorOf(xyz(literal)).message).toContain('too large');
+        expect(errorOf(`dx = ${literal}\ndy = 0\ndz = 0`).message).toContain('too large');
+    });
+
+    it('the largest and smallest literals a float32 holds still compile, and tiny ones become 0', () => {
+        expect(run(xyz('3.4e38'))[0]).toBe(Math.fround(3.4e38));
+        const { glsl } = compileFormula(xyz('1e-320', '1e-39', '1e-37'));
+        expect(glsl).toContain('(0.0)');
+        expect(glsl).toContain('(1e-37)');
+        expect(run(xyz('1e-320', '1e-39', '1e-37')).slice(0, 2)).toEqual([0, 0]);
+    });
+
+    it('literals are the float32 the GPU reads, not the double JavaScript parses', () => {
+        // 0.1 is not exact in either width, but the CPU must hold the GPU's 0.1.
+        expect(run(`a = 0.1\n${xyz('a * 3 - 0.3')}`)[0]).toBe(Math.fround(Math.fround(0.1) * 3 - Math.fround(0.3)));
+    });
+
+    it('every statement is rounded to float32, as a GPU local is', () => {
+        const big = 16777216; // 2^24: the first integer whose successor float32 cannot hold
+        expect(run(`a = ${big} + 1\n${xyz('a - ' + big)}`)[0]).toBe(0);
+    });
+
+    it('the literal is judged as float32 inside functions too (sin(PI) is the float32 PI\'s sine)', () => {
+        expect(run(xyz('sin(PI)'))[0]).toBe(Math.fround(Math.sin(Math.fround(Math.PI))));
+    });
+
     it('ordinary values are untouched', () => {
         expect(run(xyz('1e30', '-2.5', '0.125'))[0]).toBe(Math.fround(1e30));
         expect(run(xyz('1e30', '-2.5', '0.125')).slice(1)).toEqual([-2.5, 0.125]);
+    });
+});
+
+describe('H2 · glslNumber never writes a literal the shader cannot represent', () => {
+    it.each([
+        [3, '3.0'], [0.5, '0.5'], [-2, '-2.0'], [1e-7, '1e-7'], [0.1, '0.1'], [16777217, '16777216.0'], [1e30, '1e+30'],
+    ])('%s → %s', (value, text) => {
+        expect(glslNumber(value)).toBe(text);
+    });
+
+    it.each([1e39, -1e39, 1e308, Infinity, -Infinity, NaN])('refuses %s', (value) => {
+        expect(() => glslNumber(value)).toThrow(RangeError);
+    });
+
+    it.each([1e-320, 1e-39, -1e-45, 5e-324])('writes %s as 0.0, as a flush-to-zero GPU would', (value) => {
+        expect(glslNumber(value)).toBe('0.0');
+    });
+
+    it('prints the largest float32 and reads back as exactly that', () => {
+        const max = 3.4028234663852886e38;
+        expect(float32Constant(max)).toBe(max);
+        expect(Number(float32Text(max))).not.toBe(Infinity);
+        expect(Math.fround(Number(float32Text(max)))).toBe(max);
+        expect(overflowsFloat32(3.4028235e38)).toBe(false); // rounds down to the max
+        expect(overflowsFloat32(3.4028236e38)).toBe(true);
+    });
+
+    it('every float32 prints as text that rounds back to the same float32, in 9 digits or fewer', () => {
+        const bytes = new DataView(new ArrayBuffer(4));
+        let seed = 12345;
+        for (let n = 0; n < 5000; n++) {
+            seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+            bytes.setUint32(0, seed);
+            const value = bytes.getFloat32(0);
+            if (!Number.isFinite(value) || Math.abs(value) < 1.1754943508222875e-38) continue;
+            const text = float32Text(value);
+            expect(Math.fround(Number(text))).toBe(value);
+            expect(text.replace(/e.*$/, '').replace(/[-.]/g, '').replace(/^0+/, '').length).toBeLessThanOrEqual(9);
+        }
+    });
+
+    it('is the only way a number reaches the shader: no generated literal is out of range', () => {
+        const { glsl } = compileFormula('a = 1e-38\nb = 3.4e38\nx = a + b + PI + 0.1\ny = 1e-45\nz = 7');
+        for (const [literal] of glsl.matchAll(/(?<![A-Za-z_0-9])\d+\.?\d*(?:e[+-]?\d+)?/g)) {
+            expect(Number.isFinite(Math.fround(Number(literal)))).toBe(true);
+        }
     });
 });
