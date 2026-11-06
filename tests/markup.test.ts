@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { LOOK_DEFAULTS } from '../src/looks';
 import {
     ATTRIBUTES,
+    DEFAULT_LABEL,
+    accessibleName,
     dedent,
     extractElement,
     formatMarkup,
@@ -161,6 +163,20 @@ describe('markup', () => {
 describe('dedent', () => {
     it('removes shared indentation and surrounding blank lines only', () => {
         expect(dedent('\n    a = 1\n      b = 2\n\n    c = 3\n  ')).toBe('a = 1\n  b = 2\n\nc = 3');
+    });
+});
+
+describe('accessible name', () => {
+    it('is the title, trimmed', () => {
+        expect(accessibleName('Galaxy')).toBe('Galaxy');
+        expect(accessibleName('  Galaxy  ')).toBe('Galaxy');
+    });
+
+    it('is a plain description when there is no usable title', () => {
+        expect(DEFAULT_LABEL).toBe('Particle swarm');
+        expect(accessibleName(null)).toBe(DEFAULT_LABEL);
+        expect(accessibleName('')).toBe(DEFAULT_LABEL);
+        expect(accessibleName('   ')).toBe(DEFAULT_LABEL);
     });
 });
 

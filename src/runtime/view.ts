@@ -51,6 +51,11 @@ export class ViewTween {
         this.progress = 1;
     }
 
+    /** Jump to the end of the glide. */
+    finish(): void {
+        this.update(this.seconds);
+    }
+
     /** Advance; call before OrbitControls.update(). */
     update(dt: number): void {
         if (this.progress >= 1) return;

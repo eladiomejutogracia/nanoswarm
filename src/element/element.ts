@@ -1,7 +1,7 @@
 import { FormulaError } from '../formula';
 import { FlowError } from '../sources';
 import { Swarm } from '../swarm';
-import { ATTRIBUTE_NAMES, readOptions, type AttributeName, type ElementOptions } from './markup';
+import { ATTRIBUTE_NAMES, accessibleName, readOptions, type AttributeName, type ElementOptions } from './markup';
 
 const FORMULA_DEBOUNCE_MS = 150;
 
@@ -15,6 +15,10 @@ const ElementBase = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement
  * The formula is the element's text; everything else is an attribute (see
  * ATTRIBUTES in ./markup). The canvas lives in a shadow root, so the light
  * DOM — and therefore `outerHTML` — stays exactly what you wrote.
+ *
+ * For assistive technology it is an image named by its `title` (default
+ * semantics, so your own `role`, `aria-label` or `aria-hidden="true"` for a
+ * purely decorative one win). With "reduce motion" on it is a still picture.
  *
  * Events: `swarm-load` once a formula or model is showing; `swarm-error` (detail: Error)
  * when a formula, model or audio fails, or when the browser has no WebGL. Every
@@ -30,6 +34,7 @@ export class NanoSwarmElement extends ElementBase {
 
     private instance: Swarm | null = null;
     private readonly stage: HTMLDivElement;
+    private readonly internals: ElementInternals | null;
     private observer: MutationObserver | null = null;
     private formulaTimer = 0;
     private sourceQueued = false;
@@ -43,6 +48,10 @@ export class NanoSwarmElement extends ElementBase {
         const root = this.attachShadow({ mode: 'open' });
         root.innerHTML = '<style>:host{display:block;position:relative;min-height:240px}div{position:absolute;inset:0}</style><div></div>';
         this.stage = root.querySelector('div')!;
+        // Default semantics live in ElementInternals, so the light DOM stays untouched.
+        this.internals = typeof this.attachInternals === 'function' ? this.attachInternals() : null;
+        if (this.internals) this.internals.role = 'img';
+        this.updateName();
     }
 
     /** The JavaScript API underneath (null until the element is in the page). */
@@ -112,6 +121,10 @@ export class NanoSwarmElement extends ElementBase {
     }
 
     attributeChangedCallback(name: AttributeName, previous: string | null, value: string | null): void {
+        if (name === 'title') {
+            this.updateName();
+            return;
+        }
         const swarm = this.instance;
         if (!swarm || previous === value) return;
 
@@ -141,6 +154,10 @@ export class NanoSwarmElement extends ElementBase {
         if (next.interactive !== prev.interactive) swarm.setInteractive(next.interactive);
         if (next.autoRotate !== prev.autoRotate) swarm.setAutoRotate(next.autoRotate);
         this.applied = next;
+    }
+
+    private updateName(): void {
+        if (this.internals) this.internals.ariaLabel = accessibleName(this.getAttribute('title'));
     }
 
     private readAttributes(): ElementOptions {

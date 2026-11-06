@@ -74,6 +74,10 @@ ${table(Object.entries(ATTRIBUTES).map(([name, description]) => [`\`${name}\``, 
 
 Boolean attributes (\`solid\`, \`no-pointer\`, \`no-rotate\`, bare \`bloom\`) are written without a value.
 
+Accessibility is built in. The element is an image for screen readers, named by \`title\` (always give it one that
+says what the viewer sees). A purely decorative one, such as a hero background, should say \`aria-hidden="true"\`.
+When the visitor's system asks for reduced motion, the swarm becomes a still picture; nothing to configure.
+
 ## Formulas
 
 A formula is a list of lines \`name = expression\`, run for every particle. What it assigns decides its kind:

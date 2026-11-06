@@ -12,7 +12,7 @@ import { LOOK_DEFAULTS, type Look } from '../looks';
 
 /** Every attribute the element understands (plus the standard `title`). */
 export const ATTRIBUTES = {
-    title: 'A name for this creation',
+    title: 'A name for this creation; screen readers announce it as the description of the image',
     model: 'A 3D model to use instead of a formula (.glb .gltf .obj .stl .ply): a file path or a URL (another site must allow CORS). Animated .glb/.gltf files move',
     animation: 'Which animation of an animated model to play, by name (default: the first)',
     colors: 'Up to three colors, bottom → top (or c = 0 → 1)',
@@ -30,6 +30,18 @@ export const ATTRIBUTES = {
 } as const;
 export type AttributeName = keyof typeof ATTRIBUTES;
 export const ATTRIBUTE_NAMES = Object.keys(ATTRIBUTES) as AttributeName[];
+
+/** What screen readers announce when the element has no `title`. */
+export const DEFAULT_LABEL = 'Particle swarm';
+
+/**
+ * The element is an image to assistive technology, named by its `title`.
+ * Authors override it with the standard `aria-label`, or hide a purely
+ * decorative one with `aria-hidden="true"` — no attribute of ours needed.
+ */
+export function accessibleName(title: string | null): string {
+    return title?.trim() || DEFAULT_LABEL;
+}
 
 export const DEFAULT_BLOOM = 0.6;
 /** Accepted range of each numeric attribute; values outside are clamped. */

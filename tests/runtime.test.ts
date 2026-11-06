@@ -73,6 +73,18 @@ describe('ViewTween', () => {
         expect(camera.position.x).toBeGreaterThan(0);
     });
 
+    it('finish() lands on the target at once (reduced motion: no glide)', () => {
+        const camera = new THREE.PerspectiveCamera();
+        camera.position.set(0, 0, 10);
+        const tween = new ViewTween(camera);
+        tween.start({ elevation: 60, distance: 30 });
+        tween.finish();
+        expect(tween.active).toBe(false);
+        const spherical = new THREE.Spherical().setFromVector3(camera.position);
+        expect(spherical.radius).toBeCloseTo(30, 5);
+        expect(THREE.MathUtils.radToDeg(Math.PI / 2 - spherical.phi)).toBeCloseTo(60, 5);
+    });
+
     it('stops when cancelled (the user grabbed the camera)', () => {
         const camera = new THREE.PerspectiveCamera();
         camera.position.set(0, 0, 10);
