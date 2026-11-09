@@ -574,6 +574,7 @@ function glslExpr(e) {
 		case "call": {
 			const args = e.args.map(glslExpr).join(", ");
 			if (e.fn === "pow") return `nsPow(${args})`;
+			if (e.fn === "log") return `nsLog(${args})`;
 			if (e.fn === "spectrum") return `nsSpectrum(${args})`;
 			if (e.fn === "noise") return `nsNoise(vec3(${args}))`;
 			return `${e.fn}(${args})`;
