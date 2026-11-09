@@ -162,11 +162,19 @@ float nsSpectrum(float k) {
     int j = min(i + 1, ${SPECTRUM_BINS - 1});
     return mix(uSpectrum[i], uSpectrum[j], x - float(i));
 }
+// GLSL leaves log(x <= 0) and pow(x < 0, y) or pow(0, y <= 0) undefined, and GPUs
+// return finite garbage there; these give what JavaScript does, so both backends agree.
+float nsNaN() { return uintBitsToFloat(0x7fc00000u); }
+float nsInf() { return uintBitsToFloat(0x7f800000u); }
+float nsLog(float x) { return x > 0.0 ? log(x) : (x == 0.0 ? -nsInf() : nsNaN()); }
 float nsPow(float b, float e) {
-    if (b < 0.0 && floor(e) == e) {
+    if (e == 0.0) return 1.0;
+    if (b < 0.0) {
+        if (floor(e) != e) return nsNaN();
         float m = pow(-b, e);
         return mod(e, 2.0) == 0.0 ? m : -m;
     }
+    if (b == 0.0) return e > 0.0 ? 0.0 : nsInf();
     return pow(b, e);
 }
 // Checks the exponent bits instead of calling isnan/isinf: fast-math shader
@@ -193,6 +201,7 @@ function glslExpr(e: Expr): string {
     case 'call': {
         const args = e.args.map(glslExpr).join(', ');
         if (e.fn === 'pow') return `nsPow(${args})`;
+        if (e.fn === 'log') return `nsLog(${args})`;
         if (e.fn === 'spectrum') return `nsSpectrum(${args})`;
         if (e.fn === 'noise') return `nsNoise(vec3(${args}))`;
         return `${e.fn}(${args})`;

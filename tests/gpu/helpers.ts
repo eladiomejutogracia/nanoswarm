@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { GPUComputationRenderer, Variable } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
 import { SILENCE, type AudioBands } from '../../src/audio/bands';
 import { CpuBackend } from '../../src/backends/cpu';
 import { GpuBackend } from '../../src/backends/gpu';
@@ -83,4 +84,44 @@ export function uncalibratedTarget(source: string): Target {
     if (formula.program.kind === 'shape') return { kind: 'shape', formula };
     const seeds = Float32Array.from({ length: 4096 * 3 }, (_, i) => Math.sin(i * 12.9898) * 2);
     return { kind: 'motion', field: { formula, center: [0, 0, 0], scale: 1, stepPerSecond: 1, maxStep: 0.01, seeds } };
+}
+
+/** What a backend keeps between frames, read straight from its buffers (CPU) or render targets (GPU). */
+export type GpuChannel = 'positionVar' | 'velocityVar' | 'targetVar';
+
+/** One GPU channel as RGBA texels, one per particle. */
+export function readGpu(renderer: THREE.WebGLRenderer, gpu: GpuBackend, channel: GpuChannel): Float32Array {
+    const inner = gpu as unknown as { compute: GPUComputationRenderer; size: number } & Record<GpuChannel, Variable>;
+    const target = inner.compute.getCurrentRenderTarget(inner[channel]) as THREE.WebGLRenderTarget;
+    const texels = new Float32Array(inner.size * inner.size * 4);
+    renderer.readRenderTargetPixels(target, 0, 0, inner.size, inner.size, texels);
+    return texels;
+}
+
+export function readCpu(cpu: CpuBackend, buffer: 'targets' | 'positions' | 'velocities'): Float32Array {
+    return (cpu as unknown as Record<string, Float32Array>)[buffer];
+}
+
+/**
+ * Per-particle worst relative error between CPU xyz triplets and GPU RGBA texels. "Relative" is to
+ * max(1, |cpu|): near zero it is absolute error, so a value that should be 0 does not blow the ratio up.
+ * `toWorld` maps the GPU's native-space motion targets into the CPU's world space.
+ */
+export function particleErrors(
+    cpu: Float32Array,
+    gpu: Float32Array,
+    count: number,
+    toWorld?: { center: readonly number[]; scale: number },
+): Float64Array {
+    const errors = new Float64Array(count);
+    for (let i = 0; i < count; i++) {
+        for (let k = 0; k < 3; k++) {
+            const a = cpu[i * 3 + k];
+            const g = gpu[i * 4 + k];
+            const b = toWorld ? (g - toWorld.center[k]) * toWorld.scale : g;
+            const error = a === b ? 0 : Math.abs(a - b) / Math.max(1, Math.abs(a));
+            errors[i] = Math.max(errors[i], Number.isNaN(error) ? Infinity : error);
+        }
+    }
+    return errors;
 }
