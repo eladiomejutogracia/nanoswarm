@@ -12,14 +12,16 @@
  * by the parser, so the user's text never reaches `new Function` or the
  * shader compiler verbatim. Both share the same semantics: GLSL-style `mod`,
  * `fract`, `step`, sign-aware `pow`, integer-hash `noise`, and non-finite
- * results collapse to 0 — judged as float32, so 1e39 (which a float32 can't
- * hold) collapses to 0 on the CPU exactly as it does on the GPU.
+ * results collapse to 0 — judged as float32, so 1e30 * 1e10 (which a float32 can't
+ * hold) collapses to 0 on the CPU exactly as it does on the GPU. Literals are float32
+ * constants (see float32.ts) and every local is rounded to float32, as on the GPU.
  *
  * Color: if the formula assigns `c`, it is clamped to [0, 1] and picks the
  * particle's color along the palette. Otherwise the color slot is NO_COLOR
  * and the renderer colors it bottom → top.
  */
 import { SPECTRUM_BINS } from '../audio/bands';
+import { float32Constant, float32Text } from './float32';
 import { NOISE_GLSL, valueNoise3 } from './noise';
 import type { Expr, FunctionName, Program } from './parse';
 
@@ -97,7 +99,7 @@ const JS_BINARY: Record<string, string> = { '+': '+', '-': '-', '*': '*', '/': '
 
 function jsExpr(e: Expr): string {
     switch (e.kind) {
-    case 'num': return `(${e.value})`;
+    case 'num': return `(${float32Constant(e.value)})`;
     case 'input': return e.name;
     case 'local': return `l_${e.name}`;
     case 'neg': return `(-${jsExpr(e.arg)})`;
@@ -112,7 +114,7 @@ function jsExpr(e: Expr): string {
 
 export function toJavaScriptSource(program: Program): string {
     const body = program.statements
-        .map((s) => `        const l_${s.name} = ${jsExpr(s.expr)};`)
+        .map((s) => `        const l_${s.name} = fr(${jsExpr(s.expr)});`)
         .join('\n');
     const color = program.hasColor
         ? `        if (C !== null) { const c = Math.fround(l_c); C[i] = Number.isFinite(c) ? (c < 0 ? 0 : c > 1 ? 1 : c) : 0; }\n`
@@ -126,7 +128,8 @@ export function toJavaScriptSource(program: Program): string {
 
     return `"use strict";
 return function nsFormula(out, C, params, count, f, P) {
-    const t = f.t, bass = f.bass, mid = f.mid, treble = f.treble, level = f.level, S = f.spectrum;
+    const fr = Math.fround;
+    const t = fr(f.t), bass = fr(f.bass), mid = fr(f.mid), treble = fr(f.treble), level = fr(f.level), S = f.spectrum;
     for (let i = 0; i < count; i++) {
         const i3 = i * 3;
         ${read}
@@ -159,11 +162,19 @@ float nsSpectrum(float k) {
     int j = min(i + 1, ${SPECTRUM_BINS - 1});
     return mix(uSpectrum[i], uSpectrum[j], x - float(i));
 }
+// GLSL leaves log(x <= 0) and pow(x < 0, y) or pow(0, y <= 0) undefined, and GPUs
+// return finite garbage there; these give what JavaScript does, so both backends agree.
+float nsNaN() { return uintBitsToFloat(0x7fc00000u); }
+float nsInf() { return uintBitsToFloat(0x7f800000u); }
+float nsLog(float x) { return x > 0.0 ? log(x) : (x == 0.0 ? -nsInf() : nsNaN()); }
 float nsPow(float b, float e) {
-    if (b < 0.0 && floor(e) == e) {
+    if (e == 0.0) return 1.0;
+    if (b < 0.0) {
+        if (floor(e) != e) return nsNaN();
         float m = pow(-b, e);
         return mod(e, 2.0) == 0.0 ? m : -m;
     }
+    if (b == 0.0) return e > 0.0 ? 0.0 : nsInf();
     return pow(b, e);
 }
 // Checks the exponent bits instead of calling isnan/isinf: fast-math shader
@@ -172,8 +183,9 @@ float nsPow(float b, float e) {
 float nsFinite(float x) { return (floatBitsToUint(x) & 0x7f800000u) == 0x7f800000u ? 0.0 : x; }
 ${NOISE_GLSL}`;
 
-function glslNumber(value: number): string {
-    const text = String(value);
+/** A float literal the shader reads as the very float32 the CPU uses. Throws rather than emit one it cannot hold. */
+export function glslNumber(value: number): string {
+    const text = float32Text(value);
     return /[.eE]/.test(text) ? text : `${text}.0`;
 }
 
@@ -189,6 +201,7 @@ function glslExpr(e: Expr): string {
     case 'call': {
         const args = e.args.map(glslExpr).join(', ');
         if (e.fn === 'pow') return `nsPow(${args})`;
+        if (e.fn === 'log') return `nsLog(${args})`;
         if (e.fn === 'spectrum') return `nsSpectrum(${args})`;
         if (e.fn === 'noise') return `nsNoise(vec3(${args}))`;
         return `${e.fn}(${args})`;

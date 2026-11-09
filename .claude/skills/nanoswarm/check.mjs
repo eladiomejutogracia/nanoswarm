@@ -2,7 +2,43 @@
 // Generated from src/element/cli.ts by `npm run build:check`. Do not edit.
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+/** Whether `value` is too large to be a float32 (it would become Infinity). */
+var overflowsFloat32 = (value) => !Number.isFinite(Math.fround(value));
+/** `value` as a float32 shader holds it: rounded, with values below the smallest normal float32 flushed to 0. Throws if it overflows. */
+function float32Constant(value) {
+	const rounded = Math.fround(value);
+	if (!Number.isFinite(rounded)) throw new RangeError(`${value} does not fit in a float32`);
+	return Math.abs(rounded) < 11754943508222875e-54 ? 0 : rounded;
+}
+/** The shortest decimal text that a shader reads back as exactly this float32. */
+function float32Text(value) {
+	const exact = float32Constant(value);
+	if (exact === 0) return "0";
+	for (let digits = 1; digits <= 9; digits++) {
+		const exponential = exact.toExponential(digits - 1);
+		if (Math.fround(Number(exponential)) !== exact) continue;
+		const magnitude = Math.abs(exact);
+		if (magnitude >= 1e-4 && magnitude < 1e9) return String(Number(exponential));
+		return exponential.replace(/\.?0+e/, "e");
+	}
+	throw new Error("unreachable: 9 digits always identify a float32");
+}
 // src/formula/parse.ts
+/**
+* The NanoSwarm formula language.
+*
+* A formula is a tiny program: one assignment per line, and it must assign
+* `x`, `y` and `z`. Every particle runs it with its own `u`, `v`, `r`.
+*
+*     R = 4 + bass * 1.5          # locals are allowed
+*     x = R * sin(v/2) * cos(u)
+*     y = R * cos(v/2)
+*     z = R * sin(v/2) * sin(u)
+*
+* The parser builds an AST and validates every identifier against a fixed
+* whitelist. Nothing the user types is ever evaluated as JavaScript or GLSL
+* directly: both backends emit code from the validated AST only.
+*/
 var SHARED_INPUTS = {
 	r: "Per-particle random number, 0 → 1",
 	t: "Time in seconds",
@@ -278,10 +314,10 @@ var Parser = class {
 		const tok = this.next();
 		if (tok.type === "num") {
 			const value = Number(tok.text);
-			if (!Number.isFinite(value)) throw this.error(tok, `Number "${tok.text}" is too large`);
+			if (overflowsFloat32(value)) throw this.error(tok, `Number "${tok.text}" is too large (the most a formula can hold is about 3.4e38)`);
 			return {
 				kind: "num",
-				value
+				value: float32Constant(value)
 			};
 		}
 		if (tok.type === "(") {
@@ -295,7 +331,7 @@ var Parser = class {
 			if (Object.hasOwn(FUNCTIONS, name)) throw this.error(tok, `"${name}" is a function — call it like ${name}(...)`);
 			if (Object.hasOwn(CONSTANTS, name)) return {
 				kind: "num",
-				value: CONSTANTS[name]
+				value: float32Constant(CONSTANTS[name])
 			};
 			if (Object.hasOwn(this.inputs, name)) {
 				const input = name;
@@ -476,7 +512,7 @@ var JS_BINARY = {
 };
 function jsExpr(e) {
 	switch (e.kind) {
-		case "num": return `(${e.value})`;
+		case "num": return `(${float32Constant(e.value)})`;
 		case "input": return e.name;
 		case "local": return `l_${e.name}`;
 		case "neg": return `(-${jsExpr(e.arg)})`;
@@ -489,7 +525,7 @@ function jsExpr(e) {
 	}
 }
 function toJavaScriptSource(program) {
-	const body = program.statements.map((s) => `        const l_${s.name} = ${jsExpr(s.expr)};`).join("\n");
+	const body = program.statements.map((s) => `        const l_${s.name} = fr(${jsExpr(s.expr)});`).join("\n");
 	const color = program.hasColor ? `        if (C !== null) { const c = Math.fround(l_c); C[i] = Number.isFinite(c) ? (c < 0 ? 0 : c > 1 ? 1 : c) : 0; }\n` : "";
 	const motion = program.kind === "motion";
 	const read = motion ? "const x = P[i3], y = P[i3 + 1], z = P[i3 + 2], r = params[i3 + 2];" : "const u = params[i3], v = params[i3 + 1], r = params[i3 + 2];";
@@ -504,7 +540,8 @@ function toJavaScriptSource(program) {
 	];
 	return `"use strict";
 return function nsFormula(out, C, params, count, f, P) {
-    const t = f.t, bass = f.bass, mid = f.mid, treble = f.treble, level = f.level, S = f.spectrum;
+    const fr = Math.fround;
+    const t = fr(f.t), bass = fr(f.bass), mid = fr(f.mid), treble = fr(f.treble), level = fr(f.level), S = f.spectrum;
     for (let i = 0; i < count; i++) {
         const i3 = i * 3;
         ${read}
@@ -520,8 +557,9 @@ function toJavaScript(program) {
 	return new Function("H", "SP", toJavaScriptSource(program))(JS_HELPERS, sampleSpectrum);
 }
 `${NOISE_GLSL}`;
+/** A float literal the shader reads as the very float32 the CPU uses. Throws rather than emit one it cannot hold. */
 function glslNumber(value) {
-	const text = String(value);
+	const text = float32Text(value);
 	return /[.eE]/.test(text) ? text : `${text}.0`;
 }
 function glslExpr(e) {
@@ -536,6 +574,7 @@ function glslExpr(e) {
 		case "call": {
 			const args = e.args.map(glslExpr).join(", ");
 			if (e.fn === "pow") return `nsPow(${args})`;
+			if (e.fn === "log") return `nsLog(${args})`;
 			if (e.fn === "spectrum") return `nsSpectrum(${args})`;
 			if (e.fn === "noise") return `nsNoise(vec3(${args}))`;
 			return `${e.fn}(${args})`;

@@ -3,3 +3,4 @@ dist/
 dist-web/
 *.log
 .claude/settings.local.json
+.vitest/

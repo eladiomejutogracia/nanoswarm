@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { playwright } from '@vitest/browser-playwright';
 
 const root = import.meta.dirname;
 const { version } = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as { version: string };
@@ -79,8 +80,27 @@ function configFor(mode: string) {
         build: { outDir: resolve(root, 'dist-web'), emptyOutDir: true, chunkSizeWarningLimit: 900 },
         test: {
             root,
-            include: ['tests/**/*.test.ts'],
-            environment: 'node',
+            projects: [
+                // Pure logic: fast, no browser.
+                { extends: true, test: { name: 'unit', root, include: ['tests/*.test.ts'], environment: 'node' } },
+                // The generated GLSL, compiled and run by a real WebGL2 driver (headless Chromium's software
+                // renderer): the only place a shader can actually fail to compile.
+                {
+                    extends: true,
+                    test: {
+                        name: 'gpu',
+                        root,
+                        include: ['tests/gpu/*.test.ts'],
+                        browser: {
+                            enabled: true,
+                            headless: true,
+                            screenshotFailures: false,
+                            provider: playwright({ launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] } }),
+                            instances: [{ browser: 'chromium' }],
+                        },
+                    },
+                },
+            ],
         },
     };
 }
