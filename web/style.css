@@ -544,3 +544,28 @@ input[type='color']::-moz-color-swatch { border: none; border-radius: 2px; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; }
 }
+
+/* ─── Welcome ───────────────────────────────────────────── */
+
+/* Centred in the room the swarm has left, whichever panels are open. */
+.welcome {
+    --l: 0px;
+    --r: 0px;
+    position: fixed;
+    z-index: 20;
+    left: calc(var(--l) + (100vw - var(--l) - var(--r)) / 2);
+    bottom: 48px;
+    transform: translateX(-50%);
+    width: min(560px, calc(100vw - var(--l) - var(--r) - 32px));
+    padding: 20px 24px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    border: 1px solid var(--border-visible);
+    border-radius: var(--radius);
+    backdrop-filter: blur(8px);
+}
+.welcome[hidden] { display: none; }
+.welcome h2 { margin: 0 0 8px; font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; color: var(--text-display); }
+.welcome p { margin: 0 0 16px; color: var(--text-secondary); }
+body:has(#panel:not(.hidden)) .welcome { --l: var(--panel-width); }
+body:has(#code-panel:not(.hidden)) .welcome { --r: var(--code-width); }
+@media (max-width: 640px) { .welcome, body:has(#panel:not(.hidden)) .welcome, body:has(#code-panel:not(.hidden)) .welcome { --l: 0px; --r: 0px; } }
