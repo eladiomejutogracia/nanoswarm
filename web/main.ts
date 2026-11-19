@@ -22,6 +22,7 @@ const DEMO_MODEL = { model: new URL('models/fox.glb', document.baseURI).href, an
 const PARTICLE_STEPS = [5_000, 10_000, 20_000, 30_000, 60_000, 120_000, 180_000, 260_000];
 const FORMULA_DEBOUNCE_MS = 250;
 const WIDE_SCREEN = 1200;
+const PHONE = 640; // same breakpoint as style.css
 /** Your setup, not part of a creation: kept when you switch examples. */
 const SESSION_ATTRIBUTES: AttributeName[] = ['audio', 'sensitivity', 'particles', 'renderer'];
 const GROUPS = { sound: 'Sound', shapes: 'Shapes', attractors: 'Attractors' } as const;
@@ -80,6 +81,10 @@ const ui = {
     save: $<HTMLButtonElement>('save'),
     share: $<HTMLButtonElement>('share'),
     toast: $('toast'),
+    welcome: $('welcome'),
+    welcomeFox: $<HTMLButtonElement>('welcome-fox'),
+    welcomeSound: $<HTMLButtonElement>('welcome-sound'),
+    welcomeClose: $<HTMLButtonElement>('welcome-close'),
 };
 
 // ─── Reading and writing the element ─────────────────────────────
@@ -583,6 +588,46 @@ function animateMeters(): void {
     requestAnimationFrame(animateMeters);
 }
 
+// ─── Welcome ─────────────────────────────────────────────────────
+
+const WELCOME_KEY = 'nanoswarm-welcomed';
+const WELCOME_SHAPE = 'Galaxy';
+const WELCOME_SOUND_SHAPE = 'Pulse';
+
+const exampleNamed = (name: string) => examples.find((e) => titleOf(e.markup) === name)?.markup;
+
+function closeWelcome(): void {
+    ui.welcome.hidden = true;
+    try { localStorage.setItem(WELCOME_KEY, '1'); } catch { /* private mode: it will show again, harmless */ }
+}
+
+function wireWelcome(): void {
+    ui.welcomeClose.addEventListener('click', closeWelcome);
+    ui.welcomeFox.addEventListener('click', () => {
+        setAttr('solid', '');
+        setAttr('colors', '#7a3b0a #ff9d3c #ffe3b0'); // the fox keeps its own look, as in the fox example
+        setAttr('background', '#0b0906');
+        loadModel(DEMO_MODEL.model, DEMO_MODEL.animation);
+        closeWelcome();
+    });
+    ui.welcomeSound.addEventListener('click', () => {
+        const markup = exampleNamed(WELCOME_SOUND_SHAPE);
+        if (markup) applyMarkup(markup);
+        startAudio(DEMO_TRACK); // the click is the gesture the browser wants before it lets sound play
+        closeWelcome();
+    });
+}
+
+/** Only for people who arrive without a shared link, and only once. */
+function maybeWelcome(): boolean {
+    if (location.hash.length > 1) return false;
+    try { if (localStorage.getItem(WELCOME_KEY)) return false; } catch { /* unreadable: show it */ }
+    wireWelcome();
+    ui.welcome.hidden = false;
+    if (window.innerWidth <= PHONE) togglePanel(ui.panel, ui.panelToggle, false); // on a phone the sheet would hide the swarm
+    return true;
+}
+
 // ─── Start ───────────────────────────────────────────────────────
 
 renderExampleButtons();
@@ -590,8 +635,10 @@ renderPaletteButtons();
 renderHelp();
 renderThemeToggle();
 wire();
-const FIRST_EXAMPLE = 'Lorenz'; // shows the newest idea first: a formula that moves
-applyMarkup(decodeShare(location.hash) ?? (examples.find((e) => titleOf(e.markup) === FIRST_EXAMPLE) ?? examples[0]).markup);
+const FIRST_EXAMPLE = 'Lorenz'; // what a returning visitor sees: a formula that moves
+const welcoming = maybeWelcome();
+const first = welcoming ? WELCOME_SHAPE : FIRST_EXAMPLE;
+applyMarkup(decodeShare(location.hash) ?? (examples.find((e) => titleOf(e.markup) === first) ?? examples[0]).markup);
 togglePanel(ui.codePanel, ui.codeToggle, window.innerWidth >= WIDE_SCREEN);
 render();
 setInterval(() => {

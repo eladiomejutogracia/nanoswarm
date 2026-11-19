@@ -203,6 +203,17 @@
         </form>
     </dialog>
 
+    <!-- The welcome: shown once, over the galaxy, to people who arrive without a shared link. -->
+    <section id="welcome" class="welcome" aria-labelledby="welcome-title" hidden>
+        <h2 id="welcome-title">Particles from a formula</h2>
+        <p>One HTML element. Its text is a formula, its attributes are settings. This galaxy is five lines.</p>
+        <div class="buttons">
+            <button id="welcome-fox">Meet the fox</button>
+            <button id="welcome-sound">Hear it move</button>
+            <button id="welcome-close" class="primary">Start exploring</button>
+        </div>
+    </section>
+
     <div id="toast" class="toast" role="alert" hidden></div>
 
     <script type="module" src="./main.ts"></script>

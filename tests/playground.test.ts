@@ -27,3 +27,22 @@ describe('playground keyboard access', () => {
         expect(css).toMatch(/\.drop:has\(:focus-visible\)/);
     });
 });
+
+describe('playground welcome', () => {
+    const main = readFileSync(new URL('../web/main.ts', import.meta.url), 'utf8');
+
+    it('is a named region with the three ways in, hidden until the script decides', () => {
+        expect(html).toMatch(/<section id="welcome"[^>]*aria-labelledby="welcome-title"[^>]*\shidden/);
+        for (const id of ['welcome-fox', 'welcome-sound', 'welcome-close']) expect(html).toContain(`id="${id}"`);
+    });
+
+    it('opens on the galaxy and never over a shared link', () => {
+        expect(main).toMatch(/WELCOME_SHAPE = 'Galaxy'/);
+        expect(main).toMatch(/location\.hash\.length > 1\) return false/);
+    });
+
+    it('is remembered, but works without storage', () => {
+        expect(main).toMatch(/try \{[^}]*localStorage\.setItem\(WELCOME_KEY/);
+        expect(main).toMatch(/try \{[^}]*localStorage\.getItem\(WELCOME_KEY/);
+    });
+});
