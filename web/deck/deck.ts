@@ -44,7 +44,8 @@ function applySwarm(slide: Slide): void {
 // ─── Slides ──────────────────────────────────────────────────────
 
 const deck = $('deck');
-const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Safe in text and in quoted attributes.
+const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 function codeFor(slide: Slide): string {
     // The element as written: what the slide shows is exactly what is drawn.
