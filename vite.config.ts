@@ -77,7 +77,13 @@ function configFor(mode: string) {
         root: 'web',
         base: './',
         // three.js alone is ~600 kB minified; that is expected for the playground.
-        build: { outDir: resolve(root, 'dist-web'), emptyOutDir: true, chunkSizeWarningLimit: 900 },
+        build: {
+            outDir: resolve(root, 'dist-web'),
+            emptyOutDir: true,
+            chunkSizeWarningLimit: 900,
+            // The playground, and the deck at deck/ (each page is a real <nano-swarm>).
+            rolldownOptions: { input: { main: resolve(root, 'web/index.html'), deck: resolve(root, 'web/deck/index.html') } },
+        },
         test: {
             root,
             projects: [
