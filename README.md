@@ -40,6 +40,9 @@ nothing else to load. From npm, where three.js is your own dependency, the modul
 The [playground](web/) is a live editor for one of these elements: every control just edits it,
 and the **</> Code** panel shows it as it is. Save it as a page or copy a link.
 
+The [deck](https://eladiomejutogracia.github.io/nanoswarm/deck/) ([`web/deck/`](web/deck/)) presents NanoSwarm
+in eight slides, in English or Spanish. Every background is the element itself, mostly the files in `examples/`.
+
 ## Formulas
 
 A formula is a list of lines `name = expression`. There are two kinds — what you write decides which.
